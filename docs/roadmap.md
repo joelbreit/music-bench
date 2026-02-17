@@ -10,7 +10,7 @@ The app is a blank Vite/React/Tailwind template with a single `Button` shadcn co
 
 These are architectural choices that must be settled before the phases that depend on them. They are listed in priority order.
 
-### D1 — Data Persistence
+### D1 — Data Persistence ✅ Dexie (IndexedDB)
 
 All domain objects (Plans, Runs, Trials, Judgments) need to be stored somewhere.
 
@@ -22,7 +22,7 @@ All domain objects (Plans, Runs, Trials, Judgments) need to be stored somewhere.
 
 **Recommendation:** Start with Dexie (IndexedDB). Storage needs are small today but Trials accumulate quickly. Dexie's API is clean and the async cost is low in React. A backend can be added later with the same interface.
 
-### D2 — State Management
+### D2 — State Management ✅ Zustand
 
 Client state (selected plan, active run, UI state) needs a home separate from persistence.
 
@@ -34,7 +34,7 @@ Client state (selected plan, active run, UI state) needs a home separate from pe
 
 **Recommendation:** Zustand. The domain has several independent slices (plans, runs, evaluation queue) and Zustand's slice pattern maps cleanly to them.
 
-### D3 — Router
+### D3 — Router ✅ TanStack Router
 
 Four surfaces (Build, Run, Evaluate, Explore) plus deep-link URLs for individual plans, runs, and trials.
 

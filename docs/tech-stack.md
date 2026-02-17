@@ -8,3 +8,7 @@
 - Tailwind CSS
 - Shadcn UI
 - Lucide Icons
+- TanStack Router
+- Zustand
+- Dexie
+- Prettier
