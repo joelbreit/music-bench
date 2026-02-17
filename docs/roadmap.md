@@ -132,7 +132,7 @@ graph TD
 
 No decisions block this phase (except D1–D3 which must be settled first).
 
-### T1 — Theme
+### T1 — Theme ✅
 
 Rework `src/index.css` CSS variables to match the design spec. The current shadcn defaults use a neutral gray palette with light-mode primary; the spec calls for dark-mode default with a cool blue accent.
 

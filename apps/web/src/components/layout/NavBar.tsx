@@ -1,5 +1,7 @@
 import { Link, useRouterState } from '@tanstack/react-router';
+import { Moon, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUIStore } from '@/store';
 
 const NAV_ITEMS = [
 	{ to: '/build', label: 'Build' },
@@ -20,7 +22,7 @@ function NavLink({ to, label }: { to: string; label: string }) {
 				'px-3 py-1 text-sm rounded-md transition-colors duration-150',
 				isActive
 					? 'text-foreground bg-accent'
-					: 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
+					: 'text-muted-foreground hover:text-foreground hover:bg-muted',
 			)}
 		>
 			{label}
@@ -29,6 +31,8 @@ function NavLink({ to, label }: { to: string; label: string }) {
 }
 
 export default function NavBar() {
+	const { theme, toggleTheme } = useUIStore();
+
 	return (
 		<header className="flex h-11 shrink-0 items-center border-b border-border px-4 gap-6">
 			<span className="text-sm font-semibold tracking-wide select-none">MusicBench</span>
@@ -37,6 +41,15 @@ export default function NavBar() {
 					<NavLink key={to} to={to} label={label} />
 				))}
 			</nav>
+			<div className="ml-auto">
+				<button
+					onClick={toggleTheme}
+					className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:text-foreground hover:bg-muted"
+					aria-label="Toggle theme"
+				>
+					{theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+				</button>
+			</div>
 		</header>
 	);
 }
