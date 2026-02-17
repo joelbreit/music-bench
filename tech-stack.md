@@ -1,0 +1,10 @@
+# MusicBench Tech Stack
+
+## Frontend
+
+- Vite
+- React
+- TypeScript
+- Tailwind CSS
+- Shadcn UI
+- Lucide Icons
