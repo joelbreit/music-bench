@@ -97,7 +97,7 @@ graph TD
     subgraph P4
         T15[T15 Music Renderer ✅]
         T16[T16 Eval Queue ✅]
-        T17[T17 Rate Mode]
+        T17[T17 Rate Mode ✅]
         T18[T18 Compare Mode]
     end
 
@@ -298,17 +298,15 @@ Left panel of the Evaluate surface.
 - Active run detected from current URL pathname via `useRouterState`
 - Click navigates to `/evaluate/$runId`
 
-### T17 — Rate Mode
+### T17 — Rate Mode ✅
 
 Right panel when a `Rate`-strategy run is selected.
 
-- Step-through interface: one Trial at a time
-- Header: model badge, input text, progress indicator (e.g. "Trial 3 of 12")
-- Music renderer (T15) displaying the trial output
-- Raw output collapsible section (monospace, scrollable)
-- Star rating widget: 5 stars, click to set; current rating shown if already rated
-- "Next" / "Previous" navigation; "Skip" for undecided trials
-- Ratings auto-saved on selection; "Done" button when all trials rated
+- `src/components/evaluate/RateMode.tsx` — step-through interface with header (model badge, input, "Trial N of M"), MusicRenderer, raw output collapsible, star rating widget, and Prev/Skip/Next/Done footer
+- Ratings written to `db.ratings` via `put()` (upsert) on click; UI updates reactively via `useLiveQuery`
+- `key={runId}` on RateMode resets trial index when a different run is selected
+- "Done" button appears and navigates to `/evaluate` when all trials are rated
+- `src/pages/EvaluateRunPage.tsx` updated — loads run + plan, delegates to RateMode or "Compare — T18" placeholder
 
 ### T18 — Compare Mode
 
