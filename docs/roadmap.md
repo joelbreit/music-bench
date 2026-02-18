@@ -96,7 +96,7 @@ graph TD
 
     subgraph P4
         T15[T15 Music Renderer ✅]
-        T16[T16 Eval Queue]
+        T16[T16 Eval Queue ✅]
         T17[T17 Rate Mode]
         T18[T18 Compare Mode]
     end
@@ -289,14 +289,14 @@ Pluggable `<MusicRenderer output={string} />` component.
 - `src/lib/renderers/index.ts` — registry + `getActiveRenderer()`; inline doc for adding new renderers (e.g. abcjs)
 - `src/hooks/useRenderer.ts` — `useRenderer(output)` returns `{ containerRef, error }`
 
-### T16 — Evaluation Queue
+### T16 — Evaluation Queue ✅
 
 Left panel of the Evaluate surface.
 
-- List of runs that have status `complete` and eval strategy `Rate` or `Compare`; runs with `Parse` strategy are excluded (auto-judged during execution)
-- Per-run row: plan name, eval strategy badge, remaining unevaluated trial/input count, elapsed time
-- Click a run to load its evaluation workspace (T17 or T18 depending on strategy)
-- Completed evaluations are removed from or greyed out in the queue
+- `src/components/evaluate/EvalQueuePanel.tsx` — live query loads complete Rate/Compare runs, computes remaining count (unrated trials / unranked inputs) per run
+- Completed runs greyed out (`opacity-50`); active row highlighted with accent
+- Active run detected from current URL pathname via `useRouterState`
+- Click navigates to `/evaluate/$runId`
 
 ### T17 — Rate Mode
 
