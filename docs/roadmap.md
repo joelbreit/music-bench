@@ -213,7 +213,7 @@ Plans appear inline under their folder in the sidebar (T5). This task covers the
 - "New Plan" button within folder context (pre-selects the parent folder)
 - Newly created plan is immediately selected and the editor scrolls into view
 
-### T7 — Plan Editor
+### T7 — Plan Editor ✅
 
 Right panel. Edits are auto-saved (debounced) to the store.
 
