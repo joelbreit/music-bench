@@ -232,7 +232,7 @@ Settings page or slide-over panel for configuring available models. This data fe
 - Models persisted in a `models` Dexie table (or Zustand store with localStorage for simpler config)
 - A handful of fixture models included in seed data (e.g. `claude-opus-4-6`, `gpt-4o`)
 
-### T10 — Run Configuration UI
+### T10 — Run Configuration UI ✅
 
 Left panel of the Run surface.
 
