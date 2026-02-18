@@ -95,7 +95,7 @@ graph TD
     end
 
     subgraph P4
-        T15[T15 Music Renderer]
+        T15[T15 Music Renderer ✅]
         T16[T16 Eval Queue]
         T17[T17 Rate Mode]
         T18[T18 Compare Mode]
@@ -280,15 +280,14 @@ Right panel of the Run surface.
 
 Two-panel layout: queue left, evaluation workspace right.
 
-### T15 — Music Renderer Component
+### T15 — Music Renderer Component ✅
 
 Pluggable `<MusicRenderer output={string} />` component.
 
-- Renders in a self-contained dark region (dark mode regardless of app theme, per design spec)
-- `StubRenderer`: displays raw output in a styled monospace block with a "No renderer configured" notice
-- Renderer registry: reads from app config to select active renderer; `StubRenderer` is the default
-- Export hook: `useRenderer(output)` returns `{ render, error }` for use in Evaluate UI
-- Document how to add a new renderer (e.g. abcjs) — a `RENDERERS.md` or inline comment is sufficient
+- `src/components/music/MusicRenderer.tsx` — self-contained dark region (forces `.dark` CSS variables via class)
+- `src/lib/renderers/stub.ts` — `StubRenderer`: raw monospace output with "No renderer configured" notice
+- `src/lib/renderers/index.ts` — registry + `getActiveRenderer()`; inline doc for adding new renderers (e.g. abcjs)
+- `src/hooks/useRenderer.ts` — `useRenderer(output)` returns `{ containerRef, error }`
 
 ### T16 — Evaluation Queue
 
