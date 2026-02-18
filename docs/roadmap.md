@@ -98,7 +98,7 @@ graph TD
         T15[T15 Music Renderer ✅]
         T16[T16 Eval Queue ✅]
         T17[T17 Rate Mode ✅]
-        T18[T18 Compare Mode]
+        T18[T18 Compare Mode ✅]
     end
 
     subgraph P5
@@ -308,16 +308,15 @@ Right panel when a `Rate`-strategy run is selected.
 - "Done" button appears and navigates to `/evaluate` when all trials are rated
 - `src/pages/EvaluateRunPage.tsx` updated — loads run + plan, delegates to RateMode or "Compare — T18" placeholder
 
-### T18 — Compare Mode
+### T18 — Compare Mode ✅
 
 Right panel when a `Compare`-strategy run is selected.
 
-- One Input at a time; sidebar shows input list with completion status
-- Side-by-side columns, one per Model (scroll horizontally if > 3 models)
-- Each column: model badge, music renderer, raw output collapsible
-- Ranking widget: drag-to-reorder or up/down arrow-controlled vertical stack; displays current rank for each model
-- Rankings auto-saved on change; "Next Input" button
-- Summary view: shows how many inputs have been fully ranked
+- `src/components/evaluate/CompareMode.tsx` — two-sub-panel layout: input list sidebar (✓/○ completion) + main area
+- Model columns side-by-side with horizontal scroll for > 3 models; each has model badge, MusicRenderer, raw output collapsible
+- `RankingWidget` keyed by `${runId}-${inputIdx}` — up/down arrows reorder model stack; saves `Ranking` via `db.rankings.put()` (upsert) on every move
+- "X / N inputs ranked" summary in header; "Done" button navigates to `/evaluate` when all ranked
+- `key={runId}` on CompareMode resets input index when run changes
 
 ---
 

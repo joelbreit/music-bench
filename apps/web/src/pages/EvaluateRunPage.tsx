@@ -2,6 +2,7 @@ import { useParams } from '@tanstack/react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/db';
 import RateMode from '@/components/evaluate/RateMode';
+import CompareMode from '@/components/evaluate/CompareMode';
 
 export default function EvaluateRunPage() {
 	const { runId } = useParams({ from: '/evaluate/$runId' });
@@ -43,8 +44,8 @@ export default function EvaluateRunPage() {
 
 	if (plan.evalStrategy === 'compare') {
 		return (
-			<div className="flex flex-1 items-center justify-center text-muted-foreground text-sm">
-				Compare mode — T18
+			<div className="flex-1 overflow-hidden flex flex-col">
+				<CompareMode key={runId} run={run} plan={plan} />
 			</div>
 		);
 	}
