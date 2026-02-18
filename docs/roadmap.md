@@ -143,7 +143,7 @@ Rework `src/index.css` CSS variables to match the design spec. The current shadc
 - Set `dark` class on `<html>` as default; add a theme toggle that persists to localStorage
 - Verify radius values (~8–10px per design spec; current default `0.625rem` is close but should be confirmed)
 
-### T2 — App Shell & Routing
+### T2 — App Shell & Routing ✅
 
 Install and configure the chosen router (D3). Build the persistent outer chrome.
 
@@ -154,7 +154,7 @@ Install and configure the chosen router (D3). Build the persistent outer chrome.
 - Dark mode toggle wired to theme class (from T1)
 - Each surface renders a placeholder page so navigation is testable end-to-end
 
-### T3 — Domain Types
+### T3 — Domain Types ✅
 
 Define TypeScript interfaces for all domain entities in `src/types/`. No runtime logic — types only.
 
@@ -175,7 +175,7 @@ Also define the adapter interfaces:
 - `MusicRenderer` — `render(output: string, container: HTMLElement): void; destroy(): void`
 - `LLMAdapter` — `call(model: Model, prompt: string, input: string): Promise<{ output: string; latencyMs: number; tokens: number }>`
 
-### T4 — Data Store
+### T4 — Data Store ✅
 
 Implement the persistence layer (D1) and a Zustand store (D2) wired to it.
 
