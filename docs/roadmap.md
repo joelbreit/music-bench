@@ -204,7 +204,7 @@ Narrow left panel (~220px) with the folder tree.
 - Clicking a plan navigates to the plan editor route
 - Active plan highlighted with accent background
 
-### T6 — Plan List
+### T6 — Plan List ✅
 
 Plans appear inline under their folder in the sidebar (T5). This task covers the plan-level interactions.
 

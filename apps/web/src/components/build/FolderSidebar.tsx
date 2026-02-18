@@ -9,8 +9,9 @@ import {
 	Pencil,
 	Trash2,
 	Plus,
-	Folder as FolderIcon,
+	Copy,
 	FolderOpen,
+	Folder as FolderIcon,
 } from 'lucide-react';
 import {
 	DropdownMenu,
@@ -18,6 +19,9 @@ import {
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
+	DropdownMenuSub,
+	DropdownMenuSubTrigger,
+	DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { db } from '@/db';
@@ -52,28 +56,148 @@ const STRATEGY_LABEL: Record<Plan['evalStrategy'], string> = {
 
 // ─── Plan row ─────────────────────────────────────────────────────────────────
 
-function PlanRow({ plan, isActive, indent }: { plan: Plan; isActive: boolean; indent: number }) {
+function PlanRow({
+	plan,
+	isActive,
+	indent,
+	isRenaming,
+	renameValue,
+	folders,
+	onRenameStart,
+	onRenameChange,
+	onRenameCommit,
+	onRenameCancel,
+	onDuplicate,
+	onDelete,
+	onMoveTo,
+}: {
+	plan: Plan;
+	isActive: boolean;
+	indent: number;
+	isRenaming: boolean;
+	renameValue: string;
+	folders: Folder[];
+	onRenameStart: () => void;
+	onRenameChange: (v: string) => void;
+	onRenameCommit: () => void;
+	onRenameCancel: () => void;
+	onDuplicate: () => void;
+	onDelete: () => void;
+	onMoveTo: (folderId: string) => void;
+}) {
 	const navigate = useNavigate();
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		if (isRenaming) {
+			inputRef.current?.focus();
+			inputRef.current?.select();
+		}
+	}, [isRenaming]);
+
+	const otherFolders = folders.filter((f) => f.id !== plan.folderId);
 
 	return (
-		<button
-			onClick={() => {
-				console.log('[FolderSidebar] Navigating to plan:', plan.id);
-				navigate({ to: '/build/plan/$planId', params: { planId: plan.id } });
-			}}
+		<div
 			className={cn(
-				'w-full flex items-center gap-2 pr-2 py-1 rounded-md text-left transition-colors duration-150',
-				isActive
-					? 'bg-accent text-foreground'
-					: 'text-muted-foreground hover:text-foreground hover:bg-muted',
+				'group flex items-center gap-1 pr-1 py-0.5 rounded-md transition-colors duration-150',
+				isActive ? 'bg-accent' : 'hover:bg-muted',
 			)}
 			style={{ paddingLeft: `${indent}px` }}
 		>
-			<span className="flex-1 truncate text-xs">{plan.name}</span>
-			<span className="shrink-0 text-[10px] text-dim-foreground">
-				{STRATEGY_LABEL[plan.evalStrategy]}
-			</span>
-		</button>
+			{/* Main click area */}
+			<button
+				onClick={() => {
+					if (isRenaming) return;
+					console.log('[FolderSidebar] Navigating to plan:', plan.id);
+					navigate({ to: '/build/plan/$planId', params: { planId: plan.id } });
+				}}
+				tabIndex={isRenaming ? -1 : 0}
+				className="flex flex-1 min-w-0 items-center py-0.5 text-left"
+			>
+				{isRenaming ? (
+					<input
+						ref={inputRef}
+						value={renameValue}
+						onChange={(e) => onRenameChange(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === 'Enter') onRenameCommit();
+							if (e.key === 'Escape') onRenameCancel();
+						}}
+						onBlur={onRenameCommit}
+						onClick={(e) => e.stopPropagation()}
+						className="flex-1 min-w-0 bg-transparent text-xs text-foreground outline-none border-b border-primary"
+					/>
+				) : (
+					<span
+						className={cn(
+							'flex-1 truncate text-xs',
+							isActive
+								? 'text-foreground'
+								: 'text-muted-foreground group-hover:text-foreground',
+						)}
+					>
+						{plan.name}
+					</span>
+				)}
+			</button>
+
+			{/* Strategy badge — hidden while renaming */}
+			{!isRenaming && (
+				<span className="shrink-0 text-[10px] text-dim-foreground">
+					{STRATEGY_LABEL[plan.evalStrategy]}
+				</span>
+			)}
+
+			{/* ⋯ context menu — fades in on row hover */}
+			{!isRenaming && (
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<button
+							onClick={(e) => e.stopPropagation()}
+							className="shrink-0 flex items-center justify-center h-5 w-5 rounded opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-150"
+							aria-label={`Options for ${plan.name}`}
+						>
+							<MoreHorizontal size={12} />
+						</button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="start" className="w-44">
+						<DropdownMenuItem onSelect={onRenameStart}>
+							<Pencil size={12} className="mr-2" />
+							Rename
+						</DropdownMenuItem>
+						<DropdownMenuItem onSelect={onDuplicate}>
+							<Copy size={12} className="mr-2" />
+							Duplicate
+						</DropdownMenuItem>
+						{otherFolders.length > 0 && (
+							<DropdownMenuSub>
+								<DropdownMenuSubTrigger>
+									<FolderOpen size={12} className="mr-2" />
+									Move to folder
+								</DropdownMenuSubTrigger>
+								<DropdownMenuSubContent className="w-44">
+									{otherFolders.map((f) => (
+										<DropdownMenuItem key={f.id} onSelect={() => onMoveTo(f.id)}>
+											<FolderIcon size={12} className="mr-2" />
+											{f.name}
+										</DropdownMenuItem>
+									))}
+								</DropdownMenuSubContent>
+							</DropdownMenuSub>
+						)}
+						<DropdownMenuSeparator />
+						<DropdownMenuItem
+							onSelect={onDelete}
+							className="text-error focus:text-error"
+						>
+							<Trash2 size={12} className="mr-2" />
+							Delete plan
+						</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			)}
+		</div>
 	);
 }
 
@@ -91,6 +215,7 @@ function FolderRow({
 	onRenameCommit,
 	onRenameCancel,
 	onRenameStart,
+	onNewPlan,
 	onNewSubfolder,
 	onDelete,
 }: {
@@ -105,6 +230,7 @@ function FolderRow({
 	onRenameCommit: () => void;
 	onRenameCancel: () => void;
 	onRenameStart: () => void;
+	onNewPlan: () => void;
 	onNewSubfolder: () => void;
 	onDelete: () => void;
 }) {
@@ -177,6 +303,10 @@ function FolderRow({
 							<Pencil size={12} className="mr-2" />
 							Rename
 						</DropdownMenuItem>
+						<DropdownMenuItem onSelect={onNewPlan}>
+							<Plus size={12} className="mr-2" />
+							New plan
+						</DropdownMenuItem>
 						<DropdownMenuItem onSelect={onNewSubfolder}>
 							<FolderPlus size={12} className="mr-2" />
 							New subfolder
@@ -203,8 +333,12 @@ export default function FolderSidebar() {
 	// Track *collapsed* folders — all folders are expanded by default,
 	// so no effect is needed to initialise from Dexie data.
 	const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+	// Folder rename state
 	const [renamingId, setRenamingId] = useState<string | null>(null);
 	const [renameValue, setRenameValue] = useState('');
+	// Plan rename state
+	const [renamingPlanId, setRenamingPlanId] = useState<string | null>(null);
+	const [planRenameValue, setPlanRenameValue] = useState('');
 
 	const folders = useLiveQuery(() => db.folders.orderBy('createdAt').toArray()) ?? [];
 	const plans = useLiveQuery(() => db.plans.orderBy('createdAt').toArray()) ?? [];
@@ -219,7 +353,7 @@ export default function FolderSidebar() {
 
 	const tree = buildTree(folders, plans);
 
-	// ── Operations ─────────────────────────────────────────────────────────────
+	// ── Folder operations ───────────────────────────────────────────────────────
 
 	function isExpanded(id: string) {
 		return !collapsed.has(id);
@@ -239,6 +373,8 @@ export default function FolderSidebar() {
 
 	function startRename(folder: Folder) {
 		console.log('[FolderSidebar] Starting rename for folder:', folder.id);
+		setRenamingPlanId(null);
+		setPlanRenameValue('');
 		setRenamingId(folder.id);
 		setRenameValue(folder.name);
 	}
@@ -306,6 +442,91 @@ export default function FolderSidebar() {
 		}
 	}
 
+	// ── Plan operations ─────────────────────────────────────────────────────────
+
+	function startRenamePlan(plan: Plan) {
+		console.log('[FolderSidebar] Starting rename for plan:', plan.id);
+		setRenamingId(null);
+		setRenameValue('');
+		setRenamingPlanId(plan.id);
+		setPlanRenameValue(plan.name);
+	}
+
+	async function commitRenamePlan() {
+		if (!renamingPlanId) return;
+		const trimmed = planRenameValue.trim();
+		if (trimmed) {
+			console.log('[FolderSidebar] Renaming plan', renamingPlanId, 'to:', trimmed);
+			await db.plans.update(renamingPlanId, { name: trimmed, updatedAt: new Date() });
+		}
+		setRenamingPlanId(null);
+		setPlanRenameValue('');
+	}
+
+	function cancelRenamePlan() {
+		setRenamingPlanId(null);
+		setPlanRenameValue('');
+	}
+
+	async function createPlan(folderId: string) {
+		const id = crypto.randomUUID();
+		const now = new Date();
+		console.log('[FolderSidebar] Creating plan in folder:', folderId);
+		await db.plans.add({
+			id,
+			folderId,
+			name: 'New Plan',
+			promptTemplate: '',
+			inputs: [],
+			evalStrategy: 'parse',
+			parseCode: null,
+			createdAt: now,
+			updatedAt: now,
+		});
+		// Ensure the folder is expanded so the new plan is visible
+		setCollapsed((prev) => {
+			const next = new Set(prev);
+			next.delete(folderId);
+			return next;
+		});
+		// Navigate immediately to the new plan
+		navigate({ to: '/build/plan/$planId', params: { planId: id } });
+	}
+
+	async function duplicatePlan(plan: Plan) {
+		const id = crypto.randomUUID();
+		const now = new Date();
+		console.log('[FolderSidebar] Duplicating plan:', plan.id);
+		await db.plans.add({
+			...plan,
+			id,
+			name: `${plan.name} copy`,
+			createdAt: now,
+			updatedAt: now,
+		});
+		navigate({ to: '/build/plan/$planId', params: { planId: id } });
+	}
+
+	async function deletePlan(plan: Plan) {
+		if (!window.confirm(`Delete plan "${plan.name}"? This cannot be undone.`)) return;
+		console.log('[FolderSidebar] Deleting plan:', plan.id);
+		await db.plans.delete(plan.id);
+		if (activePlanId === plan.id) {
+			navigate({ to: '/build' });
+		}
+	}
+
+	async function movePlanToFolder(plan: Plan, folderId: string) {
+		console.log('[FolderSidebar] Moving plan', plan.id, 'to folder:', folderId);
+		await db.plans.update(plan.id, { folderId, updatedAt: new Date() });
+		// Expand destination folder so the moved plan is visible
+		setCollapsed((prev) => {
+			const next = new Set(prev);
+			next.delete(folderId);
+			return next;
+		});
+	}
+
 	// ── Render ─────────────────────────────────────────────────────────────────
 
 	function renderTree(nodes: FolderNode[], depth: number) {
@@ -326,6 +547,7 @@ export default function FolderSidebar() {
 					onRenameChange={setRenameValue}
 					onRenameCommit={commitRename}
 					onRenameCancel={cancelRename}
+					onNewPlan={() => createPlan(node.folder.id)}
 					onNewSubfolder={() => createFolder(node.folder.id)}
 					onDelete={() => deleteTree(node)}
 				/>
@@ -338,6 +560,16 @@ export default function FolderSidebar() {
 								plan={plan}
 								isActive={plan.id === activePlanId}
 								indent={planIndent}
+								isRenaming={renamingPlanId === plan.id}
+								renameValue={planRenameValue}
+								folders={folders}
+								onRenameStart={() => startRenamePlan(plan)}
+								onRenameChange={setPlanRenameValue}
+								onRenameCommit={commitRenamePlan}
+								onRenameCancel={cancelRenamePlan}
+								onDuplicate={() => duplicatePlan(plan)}
+								onDelete={() => deletePlan(plan)}
+								onMoveTo={(folderId) => movePlanToFolder(plan, folderId)}
 							/>
 						))}
 					</>
