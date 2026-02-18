@@ -222,7 +222,7 @@ Shown when eval strategy is `Parse`. Replaces (or appears below) the prompt temp
 
 Two-panel layout: config left, run history right (roughly equal widths per design spec).
 
-### T9 — Model Registry
+### T9 — Model Registry ✅
 
 Settings page or slide-over panel for configuring available models. This data feeds the model multi-select in T10.
 

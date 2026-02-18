@@ -87,28 +87,35 @@ export async function seedIfEmpty(): Promise<void> {
 		},
 	]);
 
-	// Models
+	// Models — use OpenRouter model IDs (provider/model-id format)
 	await db.models.bulkAdd([
 		{
 			id: 'model-claude-opus',
-			name: 'claude-opus-4-6',
+			name: 'anthropic/claude-opus-4-6',
 			provider: 'anthropic',
 			apiBase: null,
 			enabled: true,
 		},
 		{
 			id: 'model-claude-sonnet',
-			name: 'claude-sonnet-4-6',
+			name: 'anthropic/claude-sonnet-4-6',
 			provider: 'anthropic',
 			apiBase: null,
 			enabled: true,
 		},
 		{
 			id: 'model-gpt4o',
-			name: 'gpt-4o',
+			name: 'openai/gpt-4o',
 			provider: 'openai',
 			apiBase: null,
 			enabled: true,
+		},
+		{
+			id: 'model-gpt4o-mini',
+			name: 'openai/gpt-4o-mini',
+			provider: 'openai',
+			apiBase: null,
+			enabled: false,
 		},
 	]);
 
