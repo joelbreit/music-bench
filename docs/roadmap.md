@@ -102,10 +102,10 @@ graph TD
     end
 
     subgraph P5
-        T19[T19 Run Selector]
-        T20[T20 Score Engine]
-        T21[T21 Leaderboard]
-        T22[T22 Trial Table]
+        T19[T19 Run Selector ✅]
+        T20[T20 Score Engine ✅]
+        T21[T21 Leaderboard ✅]
+        T22[T22 Trial Table ✅]
     end
 ```
 
@@ -324,43 +324,42 @@ Right panel when a `Compare`-strategy run is selected.
 
 Two-panel layout: run selector left, report right.
 
-### T19 — Run Selector
+### T19 — Run Selector ✅
 
 Narrow left panel listing completed runs.
 
-- Filter to runs with status `complete` and at least one judgment
-- Per-run row: plan name, model count, eval strategy badge, date
-- Click to load the report for that run into the right panel
+- `src/components/explore/RunSelectorPanel.tsx` — filters to complete runs with ≥1 judgment (checks verdicts/ratings/rankings per strategy); active run from URL via `useRouterState`
+- Per-run row: plan name + strategy badge, model count + formatted date
+- Click navigates to `/explore/$runId`
 
-### T20 — Score Computation
+### T20 — Score Computation ✅
 
-Pure function (no UI): `computeReport(run, trials, judgments) → Report`.
+Pure function (no UI): `computeReport(run, evalStrategy, trials, judgments) → Report`.
 
-- **Parse** — pass rate per model: `passCount / totalTrials`
+- `src/lib/computeReport.ts` — `computeReport(run, evalStrategy, trials, judgments)`: dispatches to strategy-specific helpers
+- **Parse** — pass rate per judged model trials: `passCount / judgedCount`
 - **Rate** — mean rating per model, normalized to 0–1: `mean(ratings) / 5`
-- **Compare** — inverse mean rank per model, normalized to 0–1: `1 - (mean(ranks) - 1) / (modelCount - 1)`
-- `Report` includes: `runId`, `evalStrategy`, `modelScores[]` (modelId, score, trialCount, rawStats)
-- Cover edge cases: no judgments returns `null` scores; single model in Compare returns score of 1
+- **Compare** — inverse mean rank per model, normalized to 0–1: `1 - (meanRank - 1) / (modelCount - 1)`
+- Edge cases: no trials or no judgments → `null` score; single model in Compare → score of 1
 
-### T21 — Leaderboard
+### T21 — Leaderboard ✅
 
 Upper half of right panel.
 
-- Horizontal bar chart: one bar per model, width = normalized score, labeled with model name and score
-- Bars use model colors (from T1 token set) keyed by provider
-- Sorted by score descending
-- Score transitions on mount (~500ms ease per design spec)
-- Shows trial count and eval strategy as metadata below the chart
+- `src/components/explore/Leaderboard.tsx` — horizontal bar chart, one row per model sorted by score descending
+- Bars use model colors keyed by provider (chart-1 = Anthropic/amber, chart-2 = OpenAI/emerald, chart-5 = other/cyan)
+- Score transitions on mount via `setTimeout(() => setMounted(true), 0)` + CSS `transition: width 500ms ease`
+- Metadata row: strategy label + total trial count
 
-### T22 — Trial Detail Table
+### T22 — Trial Detail Table ✅
 
-Lower half of right panel (or full panel with leaderboard collapsed).
+Lower half of right panel.
 
-- One row per Trial: model (badge), input (truncated), judgment (verdict icon / rating stars / rank), latency, tokens
-- Sticky header; alternating row tint
-- Sortable columns: model, judgment, latency, tokens
-- Filter bar: model multi-select, min/max score range, input text search
-- Click a row to expand: full output in a monospace block, full input, renderer preview
+- `src/components/explore/TrialTable.tsx` — one row per Trial: model badge, input (truncated), judgment, latency, tokens
+- Sticky header; alternating row tint (`bg-muted/10`)
+- Sortable columns: model, judgment, latency, tokens (toggle asc/desc)
+- Filter bar: model multi-select chips, input text search, row count
+- Click a row to expand: full input, raw output block, MusicRenderer preview
 
 ---
 
