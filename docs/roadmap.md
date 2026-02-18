@@ -91,7 +91,7 @@ graph TD
         T11[T11 LLM Adapter ✅]
         T12[T12 Run Execution ✅]
         T13[T13 Parse Verdict ✅]
-        T14[T14 Run History]
+        T14[T14 Run History ✅]
     end
 
     subgraph P4
@@ -265,15 +265,14 @@ Called inline by T12 for Parse-strategy plans.
 
 - `src/lib/parseVerdict.ts` — `runParseAssertion(trialId, parseCode, output)`: runs assertion via `new Function()`, returns `Verdict` with `pass`/`error`; thrown errors captured as `pass: false`
 
-### T14 — Run History List
+### T14 — Run History List ✅
 
 Right panel of the Run surface.
 
-- Chronological list of all runs, newest first
-- Per-run row: plan name, model count, trial count, status badge, elapsed time, start timestamp
-- Status badges: `queued`, `running` (with progress bar), `complete`, `failed`
-- Click a run to navigate to the Explore surface with that run pre-selected
-- Running run updates progress in real time from store subscription
+- `src/components/run/RunHistoryPanel.tsx` — live-queried list (runs, plans, trials) sorted newest-first
+- Per-run row: plan name, status badge, model count, trial count, elapsed time, relative timestamp
+- Running run shows a progress bar and trial counter updated live from the Zustand store
+- Click any run navigates to `/explore/$runId`
 
 ---
 

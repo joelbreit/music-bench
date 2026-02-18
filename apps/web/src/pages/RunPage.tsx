@@ -1,4 +1,5 @@
 import RunConfigPanel from '@/components/run/RunConfigPanel';
+import RunHistoryPanel from '@/components/run/RunHistoryPanel';
 import { useRunExecutor } from '@/hooks/useRunExecutor';
 
 export default function RunPage() {
@@ -11,8 +12,8 @@ export default function RunPage() {
 				<RunConfigPanel />
 			</div>
 			{/* Right: run history — T14 */}
-			<div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-				Run history coming soon
+			<div className="flex-1 overflow-hidden">
+				<RunHistoryPanel />
 			</div>
 		</div>
 	);
