@@ -23,7 +23,14 @@ export interface Plan {
 
 // ─── Model ────────────────────────────────────────────────────────────────────
 
-export type Provider = 'anthropic' | 'openai' | 'other';
+export type Provider =
+	| 'anthropic'
+	| 'openai'
+	| 'google'
+	| 'xai'
+	| 'deepseek'
+	| 'moonshot'
+	| 'other';
 
 export interface Model {
 	id: string;

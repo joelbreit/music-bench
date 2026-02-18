@@ -7,13 +7,21 @@ import type { EvalStrategy, Model, ModelScore, Provider } from '@/types';
 const PROVIDER_BAR: Record<Provider, string> = {
 	anthropic: 'bg-chart-1',
 	openai: 'bg-chart-2',
-	other: 'bg-chart-5',
+	google: 'bg-chart-3',
+	xai: 'bg-chart-8',
+	deepseek: 'bg-chart-5',
+	moonshot: 'bg-chart-7',
+	other: 'bg-chart-4',
 };
 
 const PROVIDER_TEXT: Record<Provider, string> = {
 	anthropic: 'text-chart-1',
 	openai: 'text-chart-2',
-	other: 'text-chart-5',
+	google: 'text-chart-3',
+	xai: 'text-chart-8',
+	deepseek: 'text-chart-5',
+	moonshot: 'text-chart-7',
+	other: 'text-chart-4',
 };
 
 // ─── Strategy label ───────────────────────────────────────────────────────────

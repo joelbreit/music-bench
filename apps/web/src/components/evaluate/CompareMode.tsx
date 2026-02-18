@@ -12,6 +12,10 @@ import type { Model, Plan, Provider, Run, Trial } from '@/types';
 const PROVIDER_COLORS: Record<Provider, string> = {
 	anthropic: 'bg-chart-1/15 text-chart-1',
 	openai: 'bg-chart-2/15 text-chart-2',
+	google: 'bg-chart-3/15 text-chart-3',
+	xai: 'bg-chart-8/15 text-chart-8',
+	deepseek: 'bg-chart-5/15 text-chart-5',
+	moonshot: 'bg-chart-7/15 text-chart-7',
 	other: 'bg-muted text-muted-foreground',
 };
 

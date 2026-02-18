@@ -17,12 +17,20 @@ import type { Model, Provider } from '@/types';
 const PROVIDER_LABELS: Record<Provider, string> = {
 	anthropic: 'Anthropic',
 	openai: 'OpenAI',
+	google: 'Google',
+	xai: 'xAI',
+	deepseek: 'DeepSeek',
+	moonshot: 'MoonshotAI',
 	other: 'Other',
 };
 
 const PROVIDER_COLORS: Record<Provider, string> = {
 	anthropic: 'bg-chart-1/15 text-chart-1',
 	openai: 'bg-chart-2/15 text-chart-2',
+	google: 'bg-chart-3/15 text-chart-3',
+	xai: 'bg-chart-8/15 text-chart-8',
+	deepseek: 'bg-chart-5/15 text-chart-5',
+	moonshot: 'bg-chart-7/15 text-chart-7',
 	other: 'bg-muted text-muted-foreground',
 };
 
@@ -88,7 +96,15 @@ function ApiKeySection() {
 
 // ─── Add model form ────────────────────────────────────────────────────────────
 
-const PROVIDERS: Provider[] = ['anthropic', 'openai', 'other'];
+const PROVIDERS: Provider[] = [
+	'anthropic',
+	'openai',
+	'google',
+	'xai',
+	'deepseek',
+	'moonshot',
+	'other',
+];
 
 function AddModelForm({ onDone }: { onDone: () => void }) {
 	const [name, setName] = useState('');
