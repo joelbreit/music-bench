@@ -110,9 +110,9 @@ graph TD
     end
 
     subgraph P6
-        T23[T23 Plan Format Guide]
-        T24[T24 Plan Export]
-        T25[T25 Plan Import]
+        T23[T23 Plan Format Guide ✅]
+        T24[T24 Plan Export ✅]
+        T25[T25 Plan Import ✅]
     end
 ```
 
@@ -374,7 +374,7 @@ Lower half of right panel.
 
 Allows plans to be shared, backed up, and created with LLM assistance. The Build surface gains import and export affordances.
 
-### T23 — Plan Format Guide
+### T23 — Plan Format Guide ✅
 
 Write `docs/plan-format.md` — an LLM-friendly reference document describing the canonical JSON format for a MusicBench plan.
 
@@ -398,7 +398,7 @@ The guide must be self-contained enough that an LLM given only this document can
   3. A `compare` plan for side-by-side comparison of harmonic style
 - **Import wire format** — the exact JSON envelope expected by T25 (single plan object or array of plan objects)
 
-### T24 — Plan Export
+### T24 — Plan Export ✅
 
 Add an export action to the Build surface so any plan can be downloaded as a `.json` file.
 
@@ -407,7 +407,7 @@ Add an export action to the Build surface so any plan can be downloaded as a `.j
 - Triggers a browser download: `<plan-name>.musicbench.json`
 - "Export All" option in the folder context menu: exports every plan in the folder as a JSON array in a single file named `<folder-name>.musicbench.json`
 
-### T25 — Plan Import
+### T25 — Plan Import ✅
 
 Add an import flow to the Build surface.
 

@@ -13,8 +13,11 @@ import {
 	FolderOpen,
 	Folder as FolderIcon,
 	Download,
+	Upload,
 } from 'lucide-react';
 import { exportFolderPlans } from '@/lib/exportPlan';
+import ImportPlanDialog from '@/components/build/ImportPlanDialog';
+import type { PlanImportData } from '@/lib/importPlan';
 import {
 	DropdownMenu,
 	DropdownMenuTrigger,
@@ -498,6 +501,68 @@ export default function FolderSidebar() {
 		exportFolderPlans(node.plans, node.folder.name);
 	}
 
+	// ── Import ──────────────────────────────────────────────────────────────────
+
+	const [importOpen, setImportOpen] = useState(false);
+
+	async function handleImport(plans: PlanImportData[]) {
+		console.log('[FolderSidebar] Importing', plans.length, 'plan(s)');
+		const now = new Date();
+		let firstPlanId: string | null = null;
+		// Cache resolved folder ids within this batch
+		const folderCache = new Map<string, string>();
+
+		for (const data of plans) {
+			// Resolve or create folder by name
+			let folderId = folderCache.get(data.folder);
+			if (!folderId) {
+				const existing = await db.folders
+					.filter((f) => f.name === data.folder)
+					.first();
+				if (existing) {
+					folderId = existing.id;
+				} else {
+					folderId = crypto.randomUUID();
+					await db.folders.add({
+						id: folderId,
+						name: data.folder,
+						parentId: null,
+						createdAt: now,
+					});
+				}
+				folderCache.set(data.folder, folderId);
+				// Ensure the folder is visible in the sidebar
+				setCollapsed((prev) => {
+					const next = new Set(prev);
+					next.delete(folderId!);
+					return next;
+				});
+			}
+
+			const planId = crypto.randomUUID();
+			await db.plans.add({
+				id: planId,
+				folderId,
+				name: data.name,
+				promptTemplate: data.promptTemplate,
+				inputs: data.inputs,
+				evalStrategy: data.evalStrategy,
+				parseCode: data.parseCode,
+				createdAt: now,
+				updatedAt: now,
+			});
+
+			if (firstPlanId === null) firstPlanId = planId;
+		}
+
+		if (firstPlanId) {
+			navigate({
+				to: '/build/plan/$planId',
+				params: { planId: firstPlanId },
+			});
+		}
+	}
+
 	// ── Plan operations ─────────────────────────────────────────────────────────
 
 	function startRenamePlan(plan: Plan) {
@@ -668,7 +733,17 @@ export default function FolderSidebar() {
 					renderTree(tree, 0)
 				)}
 			</div>
-			<div className="shrink-0 px-2 py-2 border-t border-border">
+			<div className="shrink-0 px-2 py-2 border-t border-border space-y-0.5">
+				<button
+					onClick={() => {
+						console.log('[FolderSidebar] Opening import dialog');
+						setImportOpen(true);
+					}}
+					className="flex items-center gap-1.5 w-full px-2 py-1 text-xs text-muted-foreground rounded-md hover:text-foreground hover:bg-muted transition-colors duration-150"
+				>
+					<Upload size={12} />
+					Import Plan
+				</button>
 				<button
 					onClick={() => createFolder(null)}
 					className="flex items-center gap-1.5 w-full px-2 py-1 text-xs text-muted-foreground rounded-md hover:text-foreground hover:bg-muted transition-colors duration-150"
@@ -677,6 +752,12 @@ export default function FolderSidebar() {
 					New Folder
 				</button>
 			</div>
+
+			<ImportPlanDialog
+				open={importOpen}
+				onOpenChange={setImportOpen}
+				onConfirm={handleImport}
+			/>
 		</div>
 	);
 }
