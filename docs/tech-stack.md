@@ -12,3 +12,5 @@
 - Zustand
 - Dexie
 - Prettier
+- CodeMirror
+- abcjs

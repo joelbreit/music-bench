@@ -1,10 +1,176 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { useParams } from '@tanstack/react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ChevronUp, ChevronDown, Plus, Trash2 } from 'lucide-react';
+import { EditorView, basicSetup } from 'codemirror';
+import { javascript } from '@codemirror/lang-javascript';
+import { oneDark } from '@codemirror/theme-one-dark';
 import { cn } from '@/lib/utils';
 import { db } from '@/db';
 import type { EvalStrategy, Plan } from '@/types';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const DEFAULT_PARSE_CODE = `// function assert(output: string): boolean
+function assert(output) {
+\treturn true;
+}`;
+
+// Limit editor viewport height; horizontally always wraps.
+const cmHeightTheme = EditorView.theme({
+	'&': { maxHeight: '20rem' },
+	'.cm-scroller': { overflow: 'auto' },
+});
+
+// ─── Sandbox ─────────────────────────────────────────────────────────────────
+// Uses new Function — creates an isolated function scope but retains access to
+// global scope (window, etc.). Acceptable for a single-admin personal tool
+// where the user writes their own assertion code.
+
+function runAssertion(code: string, output: string): { pass: boolean; error?: string } {
+	try {
+		const fn = new Function(
+			'output',
+			`${code}\nreturn typeof assert === 'function' ? assert(output) : false;`,
+		);
+		const result = fn(output);
+		return { pass: Boolean(result) };
+	} catch (e) {
+		return { pass: false, error: e instanceof Error ? e.message : String(e) };
+	}
+}
+
+// ─── CodeMirror editor wrapper ────────────────────────────────────────────────
+
+function CodeEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+	const containerRef = useRef<HTMLDivElement>(null);
+	const viewRef = useRef<EditorView | null>(null);
+	// Capture initial value at mount (PlanEditor uses key={plan.id} so remounts per plan).
+	const initialValueRef = useRef(value);
+	// Keep onChange ref current after every render so the listener always has the latest callback.
+	const onChangeRef = useRef(onChange);
+	useLayoutEffect(() => {
+		onChangeRef.current = onChange;
+	});
+
+	// Mount CodeMirror on first render, destroy on unmount.
+	// Empty deps is intentional — we rely on key={plan.id} remounting for new plans.
+	useEffect(() => {
+		if (!containerRef.current) return;
+		const view = new EditorView({
+			doc: initialValueRef.current,
+			extensions: [
+				basicSetup,
+				javascript(),
+				oneDark,
+				cmHeightTheme,
+				EditorView.updateListener.of((update) => {
+					if (update.docChanged) {
+						onChangeRef.current(update.state.doc.toString());
+					}
+				}),
+			],
+			parent: containerRef.current,
+		});
+		viewRef.current = view;
+		return () => {
+			view.destroy();
+			viewRef.current = null;
+		};
+	}, []);
+
+	return (
+		<div
+			ref={containerRef}
+			className="rounded-md overflow-hidden border border-input text-sm"
+		/>
+	);
+}
+
+// ─── Parse code section (T8) ──────────────────────────────────────────────────
+
+function ParseCodeSection({
+	parseCode,
+	onCodeChange,
+}: {
+	parseCode: string;
+	onCodeChange: (v: string) => void;
+}) {
+	const [sampleOutput, setSampleOutput] = useState('');
+	const [testResult, setTestResult] = useState<{ pass: boolean; error?: string } | null>(null);
+	const [syntaxError, setSyntaxError] = useState<string | null>(null);
+
+	// Debounced syntax check — calls setSyntaxError inside a timeout so it
+	// does not count as a synchronous setState-in-effect.
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			try {
+				new Function(
+					'output',
+					`${parseCode}\nreturn typeof assert === 'function' ? assert(output) : false;`,
+				);
+				setSyntaxError(null);
+			} catch (e) {
+				setSyntaxError(e instanceof Error ? e.message : String(e));
+			}
+		}, 400);
+		return () => clearTimeout(timer);
+	}, [parseCode]);
+
+	function test() {
+		console.log('[BuildPlanPage] Running assert test on sample output');
+		const result = runAssertion(parseCode, sampleOutput);
+		setTestResult(result);
+	}
+
+	return (
+		<div className="space-y-4">
+			<CodeEditor value={parseCode} onChange={onCodeChange} />
+
+			{syntaxError && (
+				<p className="text-xs text-error font-mono bg-error/10 px-3 py-2 rounded-md">
+					{syntaxError}
+				</p>
+			)}
+
+			{/* Sample output textarea */}
+			<div className="space-y-1.5">
+				<p className="text-xs text-muted-foreground">Sample output to test against</p>
+				<textarea
+					value={sampleOutput}
+					onChange={(e) => setSampleOutput(e.target.value)}
+					rows={5}
+					spellCheck={false}
+					placeholder="Paste a sample LLM output here, then click Test…"
+					className="w-full rounded-md border border-input bg-background p-3 font-mono text-sm text-foreground resize-none outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground"
+				/>
+			</div>
+
+			<div className="flex items-center gap-3">
+				<button
+					type="button"
+					onClick={test}
+					disabled={!!syntaxError}
+					className="px-3 py-1.5 text-xs rounded-md border border-border text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-default transition-colors"
+				>
+					Test
+				</button>
+				{testResult !== null && (
+					<span
+						className={cn(
+							'text-xs font-medium',
+							testResult.pass ? 'text-success' : 'text-error',
+						)}
+					>
+						{testResult.pass
+							? '✓ Pass'
+							: `✗ Fail${testResult.error ? ` — ${testResult.error}` : ''}`}
+					</span>
+				)}
+			</div>
+		</div>
+	);
+}
 
 // ─── Template editor with {{input}} highlighting ───────────────────────────────
 
@@ -32,17 +198,14 @@ function TemplateEditor({ value, onChange }: { value: string; onChange: (v: stri
 
 	return (
 		<div className="relative rounded-md border border-input bg-background overflow-hidden focus-within:ring-1 focus-within:ring-ring">
-			{/* Highlighted backdrop — identical font/padding to textarea */}
 			<div
 				ref={backdropRef}
 				aria-hidden
-				className="absolute inset-0 p-3 font-mono text-sm leading-relaxed whitespace-pre-wrap break-words overflow-hidden pointer-events-none select-none text-transparent"
+				className="absolute inset-0 p-3 font-mono text-sm leading-relaxed whitespace-pre-wrap wrap-break-word overflow-hidden pointer-events-none select-none text-transparent"
 			>
 				{highlight(value)}
-				{/* trailing newline prevents last-line clipping */}
 				{'\n'}
 			</div>
-			{/* Actual textarea — transparent bg so marks show through */}
 			<textarea
 				ref={textareaRef}
 				value={value}
@@ -98,18 +261,19 @@ function StrategySelector({
 // this component remounts (resetting all state) whenever the plan changes.
 
 function PlanEditor({ plan }: { plan: Plan }) {
-	const planId = plan.id; // stable for the lifetime of this mount
+	const planId = plan.id;
 
-	// Draft state — initialized from the plan at mount time
 	const [name, setName] = useState(plan.name);
 	const [strategy, setStrategy] = useState<EvalStrategy>(plan.evalStrategy);
 	const [template, setTemplate] = useState(plan.promptTemplate);
 	const [inputs, setInputs] = useState<string[]>([...plan.inputs]);
-	// parseCode is not edited in T7 but we track it so save() is complete
-	const [parseCode, setParseCode] = useState<string | null>(plan.parseCode);
+	// parseCode is always a string in local state; null is only stored in Dexie
+	// when strategy !== 'parse'. Initialized to the default template if null.
+	const [parseCode, setParseCode] = useState<string>(
+		plan.parseCode ?? DEFAULT_PARSE_CODE,
+	);
 	const [isDirty, setIsDirty] = useState(false);
 
-	// Inline input editing
 	const [editingIdx, setEditingIdx] = useState<number | null>(null);
 	const [editingVal, setEditingVal] = useState('');
 	const editingInputRef = useRef<HTMLInputElement>(null);
@@ -132,7 +296,7 @@ function PlanEditor({ plan }: { plan: Plan }) {
 			evalStrategy: strategy,
 			promptTemplate: template,
 			inputs,
-			parseCode,
+			parseCode: strategy === 'parse' ? parseCode : null,
 			updatedAt: new Date(),
 		});
 		setIsDirty(false);
@@ -158,12 +322,18 @@ function PlanEditor({ plan }: { plan: Plan }) {
 
 	function changeStrategy(v: EvalStrategy) {
 		if (v === strategy) return;
-		if (strategy === 'parse' && parseCode) {
+		// Only confirm if the user has written custom (non-default) parse code
+		if (strategy === 'parse' && parseCode !== DEFAULT_PARSE_CODE) {
 			if (!window.confirm('Changing strategy will clear the parse code. Continue?')) return;
-			setParseCode(null);
+			setParseCode(DEFAULT_PARSE_CODE);
 		}
 		console.log('[BuildPlanPage] Changing strategy to:', v);
 		setStrategy(v);
+		setIsDirty(true);
+	}
+
+	function handleCodeChange(v: string) {
+		setParseCode(v);
 		setIsDirty(true);
 	}
 
@@ -189,7 +359,6 @@ function PlanEditor({ plan }: { plan: Plan }) {
 	}
 
 	function cancelEditInput() {
-		// If this was a freshly added empty item, remove it
 		if (editingIdx !== null && inputs[editingIdx] === '') {
 			setInputs((prev) => prev.filter((_, i) => i !== editingIdx));
 		}
@@ -295,7 +464,6 @@ function PlanEditor({ plan }: { plan: Plan }) {
 									key={idx}
 									className="group flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-muted transition-colors"
 								>
-									{/* Up / down reorder */}
 									<div className="flex flex-col shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
 										<button
 											type="button"
@@ -317,12 +485,10 @@ function PlanEditor({ plan }: { plan: Plan }) {
 										</button>
 									</div>
 
-									{/* Index */}
 									<span className="shrink-0 w-5 text-right text-[11px] text-dim-foreground tabular-nums">
 										{idx + 1}.
 									</span>
 
-									{/* Content — inline edit or display */}
 									{editingIdx === idx ? (
 										<input
 											ref={editingInputRef}
@@ -347,7 +513,6 @@ function PlanEditor({ plan }: { plan: Plan }) {
 										</button>
 									)}
 
-									{/* Delete */}
 									<button
 										type="button"
 										onClick={() => deleteInput(idx)}
@@ -371,15 +536,13 @@ function PlanEditor({ plan }: { plan: Plan }) {
 					</button>
 				</div>
 
-				{/* ── Parse code placeholder (T8) ── */}
+				{/* ── Parse code editor (T8) ── */}
 				{strategy === 'parse' && (
 					<div className="space-y-2">
 						<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
 							Assert function
 						</p>
-						<div className="rounded-md border border-dashed border-border p-6 text-xs text-dim-foreground text-center">
-							Parse code editor — T8
-						</div>
+						<ParseCodeSection parseCode={parseCode} onCodeChange={handleCodeChange} />
 					</div>
 				)}
 
@@ -388,7 +551,7 @@ function PlanEditor({ plan }: { plan: Plan }) {
 	);
 }
 
-// ─── Page shell — loads plan, remounts editor on plan change ──────────────────
+// ─── Page shell ───────────────────────────────────────────────────────────────
 
 export default function BuildPlanPage() {
 	const { planId } = useParams({ from: '/build/plan/$planId' });

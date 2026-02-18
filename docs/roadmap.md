@@ -46,30 +46,13 @@ Four surfaces (Build, Run, Evaluate, Explore) plus deep-link URLs for individual
 
 **Recommendation:** TanStack Router. Type-safe `Link` and `useParams` catches errors early and the project will have enough route nesting to benefit.
 
-### D4 — Music Rendering Format
+### D4 — Music Rendering Format ✅ Stub → abcjs
 
-The music renderer is pluggable, but a concrete first implementation is needed to build the Evaluate surface.
+Start with `StubRenderer` (raw monospace text) to unblock the Evaluate surface. Add abcjs for ABC notation as a follow-on once the eval workflow is validated.
 
-| Option | Notes |
-|---|---|
-| ABC notation + abcjs | Text-based, easy for LLMs to generate, well-maintained renderer |
-| MusicXML + OpenSheetMusicDisplay | Richer format, heavier library |
-| Raw audio (MIDI/MP3) | Requires synthesis pipeline, not notation |
-| Stub (show raw text only) | Unblocks Evaluate UI without committing to a format |
+### D5 — LLM API Access Pattern ✅ OpenRouter (direct browser calls)
 
-**Recommendation:** Start with a stub renderer (renders raw text in a monospace block) to unblock Evaluate UI. Add the real renderer (likely abcjs for ABC notation) as a follow-on once the eval workflow is validated.
-
-### D5 — LLM API Access Pattern
-
-Browser apps cannot securely hold API keys or make cross-origin calls to all providers.
-
-| Option | Notes |
-|---|---|
-| Direct browser calls | Works for providers with CORS support; keys stored in localStorage (acceptable for personal tool) |
-| Local proxy server (e.g. `vite-plugin-express`) | Keys stay server-side; adds a process to run |
-| Backend in `infra/` | Full solution; requires more infra work |
-
-**Recommendation:** Start with direct browser calls + keys stored in localStorage. This is a single-admin tool, not a public web app. A mock/stub adapter should be built first to unblock development without real API keys.
+Direct browser calls to [OpenRouter](https://openrouter.ai) (`https://openrouter.ai/api/v1`), which provides an OpenAI-compatible API for many providers (Anthropic, OpenAI, etc.). API key stored in `localStorage` under `mb:openrouter-key`. Acceptable for a single-admin personal tool. A `MockAdapter` is built first to unblock UI development without a real key.
 
 ---
 
@@ -223,7 +206,7 @@ Right panel. Edits are auto-saved (debounced) to the store.
 - Input list: add, edit inline, delete, reorder (drag or up/down arrows); each input is a plain text string
 - Unsaved indicator if debounce hasn't fired; explicit Save button as fallback
 
-### T8 — Parse Code Editor
+### T8 — Parse Code Editor ✅
 
 Shown when eval strategy is `Parse`. Replaces (or appears below) the prompt template section.
 
