@@ -1,4 +1,10 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
+import {
+	useState,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useCallback,
+} from 'react';
 import { useParams } from '@tanstack/react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ChevronUp, ChevronDown, Plus, Trash2 } from 'lucide-react';
@@ -27,22 +33,34 @@ const cmHeightTheme = EditorView.theme({
 // global scope (window, etc.). Acceptable for a single-admin personal tool
 // where the user writes their own assertion code.
 
-function runAssertion(code: string, output: string): { pass: boolean; error?: string } {
+function runAssertion(
+	code: string,
+	output: string
+): { pass: boolean; error?: string } {
 	try {
 		const fn = new Function(
 			'output',
-			`${code}\nreturn typeof assert === 'function' ? assert(output) : false;`,
+			`${code}\nreturn typeof assert === 'function' ? assert(output) : false;`
 		);
 		const result = fn(output);
 		return { pass: Boolean(result) };
 	} catch (e) {
-		return { pass: false, error: e instanceof Error ? e.message : String(e) };
+		return {
+			pass: false,
+			error: e instanceof Error ? e.message : String(e),
+		};
 	}
 }
 
 // ─── CodeMirror editor wrapper ────────────────────────────────────────────────
 
-function CodeEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function CodeEditor({
+	value,
+	onChange,
+}: {
+	value: string;
+	onChange: (v: string) => void;
+}) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const viewRef = useRef<EditorView | null>(null);
 	// Capture initial value at mount (PlanEditor uses key={plan.id} so remounts per plan).
@@ -97,7 +115,10 @@ function ParseCodeSection({
 	onCodeChange: (v: string) => void;
 }) {
 	const [sampleOutput, setSampleOutput] = useState('');
-	const [testResult, setTestResult] = useState<{ pass: boolean; error?: string } | null>(null);
+	const [testResult, setTestResult] = useState<{
+		pass: boolean;
+		error?: string;
+	} | null>(null);
 	const [syntaxError, setSyntaxError] = useState<string | null>(null);
 
 	// Debounced syntax check — calls setSyntaxError inside a timeout so it
@@ -107,7 +128,7 @@ function ParseCodeSection({
 			try {
 				new Function(
 					'output',
-					`${parseCode}\nreturn typeof assert === 'function' ? assert(output) : false;`,
+					`${parseCode}\nreturn typeof assert === 'function' ? assert(output) : false;`
 				);
 				setSyntaxError(null);
 			} catch (e) {
@@ -135,7 +156,9 @@ function ParseCodeSection({
 
 			{/* Sample output textarea */}
 			<div className="space-y-1.5">
-				<p className="text-xs text-muted-foreground">Sample output to test against</p>
+				<p className="text-xs text-muted-foreground">
+					Sample output to test against
+				</p>
 				<textarea
 					value={sampleOutput}
 					onChange={(e) => setSampleOutput(e.target.value)}
@@ -159,7 +182,7 @@ function ParseCodeSection({
 					<span
 						className={cn(
 							'text-xs font-medium',
-							testResult.pass ? 'text-success' : 'text-error',
+							testResult.pass ? 'text-success' : 'text-error'
 						)}
 					>
 						{testResult.pass
@@ -174,7 +197,13 @@ function ParseCodeSection({
 
 // ─── Template editor with {{input}} highlighting ───────────────────────────────
 
-function TemplateEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function TemplateEditor({
+	value,
+	onChange,
+}: {
+	value: string;
+	onChange: (v: string) => void;
+}) {
 	const backdropRef = useRef<HTMLDivElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -187,12 +216,15 @@ function TemplateEditor({ value, onChange }: { value: string; onChange: (v: stri
 	function highlight(text: string) {
 		return text.split(/({{input}})/g).map((part, i) =>
 			part === '{{input}}' ? (
-				<mark key={i} className="bg-primary/25 text-transparent rounded-[2px]">
+				<mark
+					key={i}
+					className="bg-primary/25 text-transparent rounded-[2px]"
+				>
 					{part}
 				</mark>
 			) : (
 				<span key={i}>{part}</span>
-			),
+			)
 		);
 	}
 
@@ -246,7 +278,7 @@ function StrategySelector({
 						'px-3 py-1 text-xs rounded transition-colors duration-150',
 						value === s.value
 							? 'bg-background text-foreground shadow-sm'
-							: 'text-muted-foreground hover:text-foreground',
+							: 'text-muted-foreground hover:text-foreground'
 					)}
 				>
 					{s.label}
@@ -270,7 +302,7 @@ function PlanEditor({ plan }: { plan: Plan }) {
 	// parseCode is always a string in local state; null is only stored in Dexie
 	// when strategy !== 'parse'. Initialized to the default template if null.
 	const [parseCode, setParseCode] = useState<string>(
-		plan.parseCode ?? DEFAULT_PARSE_CODE,
+		plan.parseCode ?? DEFAULT_PARSE_CODE
 	);
 	const [isDirty, setIsDirty] = useState(false);
 
@@ -324,7 +356,12 @@ function PlanEditor({ plan }: { plan: Plan }) {
 		if (v === strategy) return;
 		// Only confirm if the user has written custom (non-default) parse code
 		if (strategy === 'parse' && parseCode !== DEFAULT_PARSE_CODE) {
-			if (!window.confirm('Changing strategy will clear the parse code. Continue?')) return;
+			if (
+				!window.confirm(
+					'Changing strategy will clear the parse code. Continue?'
+				)
+			)
+				return;
 			setParseCode(DEFAULT_PARSE_CODE);
 		}
 		console.log('[BuildPlanPage] Changing strategy to:', v);
@@ -395,7 +432,6 @@ function PlanEditor({ plan }: { plan: Plan }) {
 	return (
 		<div className="flex flex-col flex-1 overflow-y-auto">
 			<div className="max-w-2xl w-full mx-auto px-8 py-8 space-y-8">
-
 				{/* ── Name + save bar ── */}
 				<div className="flex items-start gap-4">
 					<input
@@ -406,7 +442,9 @@ function PlanEditor({ plan }: { plan: Plan }) {
 					/>
 					<div className="flex items-center gap-2 shrink-0 pt-1.5">
 						{isDirty && (
-							<span className="text-xs text-muted-foreground">Unsaved</span>
+							<span className="text-xs text-muted-foreground">
+								Unsaved
+							</span>
 						)}
 						<button
 							type="button"
@@ -424,7 +462,10 @@ function PlanEditor({ plan }: { plan: Plan }) {
 					<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
 						Eval strategy
 					</p>
-					<StrategySelector value={strategy} onChange={changeStrategy} />
+					<StrategySelector
+						value={strategy}
+						onChange={changeStrategy}
+					/>
 				</div>
 
 				{/* ── Prompt template ── */}
@@ -432,7 +473,10 @@ function PlanEditor({ plan }: { plan: Plan }) {
 					<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
 						Prompt template
 					</p>
-					<TemplateEditor value={template} onChange={changeTemplate} />
+					<TemplateEditor
+						value={template}
+						onChange={changeTemplate}
+					/>
 					<p className="text-[11px] text-dim-foreground">
 						Use{' '}
 						<code className="bg-muted px-1 py-0.5 rounded text-primary font-mono">
@@ -493,10 +537,14 @@ function PlanEditor({ plan }: { plan: Plan }) {
 										<input
 											ref={editingInputRef}
 											value={editingVal}
-											onChange={(e) => setEditingVal(e.target.value)}
+											onChange={(e) =>
+												setEditingVal(e.target.value)
+											}
 											onKeyDown={(e) => {
-												if (e.key === 'Enter') commitEditInput();
-												if (e.key === 'Escape') cancelEditInput();
+												if (e.key === 'Enter')
+													commitEditInput();
+												if (e.key === 'Escape')
+													cancelEditInput();
 											}}
 											onBlur={commitEditInput}
 											className="flex-1 bg-transparent text-sm text-foreground outline-none border-b border-primary"
@@ -508,7 +556,9 @@ function PlanEditor({ plan }: { plan: Plan }) {
 											className="flex-1 text-left text-sm text-foreground truncate"
 										>
 											{input || (
-												<span className="text-muted-foreground italic">empty</span>
+												<span className="text-muted-foreground italic">
+													empty
+												</span>
 											)}
 										</button>
 									)}
@@ -542,10 +592,12 @@ function PlanEditor({ plan }: { plan: Plan }) {
 						<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
 							Assert function
 						</p>
-						<ParseCodeSection parseCode={parseCode} onCodeChange={handleCodeChange} />
+						<ParseCodeSection
+							parseCode={parseCode}
+							onCodeChange={handleCodeChange}
+						/>
 					</div>
 				)}
-
 			</div>
 		</div>
 	);

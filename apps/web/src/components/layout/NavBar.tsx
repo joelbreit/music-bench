@@ -24,7 +24,7 @@ function NavLink({ to, label }: { to: string; label: string }) {
 				'px-3 py-1 text-sm rounded-md transition-colors duration-150',
 				isActive
 					? 'text-foreground bg-accent'
-					: 'text-muted-foreground hover:text-foreground hover:bg-muted',
+					: 'text-muted-foreground hover:text-foreground hover:bg-muted'
 			)}
 		>
 			{label}
@@ -39,7 +39,9 @@ export default function NavBar() {
 	return (
 		<>
 			<header className="flex h-11 shrink-0 items-center border-b border-border px-4 gap-6">
-				<span className="text-sm font-semibold tracking-wide select-none">MusicBench</span>
+				<span className="text-sm font-semibold tracking-wide select-none">
+					MusicBench
+				</span>
 				<nav className="flex gap-1">
 					{NAV_ITEMS.map(({ to, label }) => (
 						<NavLink key={to} to={to} label={label} />
@@ -61,11 +63,18 @@ export default function NavBar() {
 						className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:text-foreground hover:bg-muted"
 						aria-label="Toggle theme"
 					>
-						{theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+						{theme === 'dark' ? (
+							<Sun size={14} />
+						) : (
+							<Moon size={14} />
+						)}
 					</button>
 				</div>
 			</header>
-			<ModelRegistryDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+			<ModelRegistryDialog
+				open={settingsOpen}
+				onOpenChange={setSettingsOpen}
+			/>
 		</>
 	);
 }

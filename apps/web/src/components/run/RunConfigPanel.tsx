@@ -25,7 +25,7 @@ function ProviderBadge({ provider }: { provider: Provider }) {
 		<span
 			className={cn(
 				'shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium',
-				PROVIDER_COLORS[provider],
+				PROVIDER_COLORS[provider]
 			)}
 		>
 			{PROVIDER_LABELS[provider]}
@@ -37,7 +37,9 @@ function ProviderBadge({ provider }: { provider: Provider }) {
 
 export default function RunConfigPanel() {
 	const [selectedPlanId, setSelectedPlanId] = useState<string>('');
-	const [selectedModelIds, setSelectedModelIds] = useState<Set<string>>(new Set());
+	const [selectedModelIds, setSelectedModelIds] = useState<Set<string>>(
+		new Set()
+	);
 
 	const { activeRunId, runProgress, requestCancel } = useUIStore();
 
@@ -46,7 +48,8 @@ export default function RunConfigPanel() {
 	const allModels = useLiveQuery(() => db.models.toArray()) ?? [];
 	const models = allModels.filter((m) => m.enabled);
 
-	const selectedPlan: Plan | null = plans.find((p) => p.id === selectedPlanId) ?? null;
+	const selectedPlan: Plan | null =
+		plans.find((p) => p.id === selectedPlanId) ?? null;
 
 	// Validation
 	const hasPlan = selectedPlan !== null;
@@ -77,7 +80,14 @@ export default function RunConfigPanel() {
 		if (!canLaunch || !selectedPlan) return;
 		const runId = crypto.randomUUID();
 		const modelIds = [...selectedModelIds];
-		console.log('[RunConfigPanel] Launching run:', runId, 'plan:', selectedPlanId, 'models:', modelIds);
+		console.log(
+			'[RunConfigPanel] Launching run:',
+			runId,
+			'plan:',
+			selectedPlanId,
+			'models:',
+			modelIds
+		);
 		await db.runs.add({
 			id: runId,
 			planId: selectedPlanId,
@@ -100,52 +110,68 @@ export default function RunConfigPanel() {
 
 	return (
 		<div className="flex flex-col h-full p-5 gap-6 overflow-y-auto">
-
 			{/* ── Plan selector ── */}
 			<div className="space-y-2">
-				<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Plan</p>
+				<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+					Plan
+				</p>
 				<select
 					value={selectedPlanId}
 					onChange={(e) => {
-						console.log('[RunConfigPanel] Plan selected:', e.target.value);
+						console.log(
+							'[RunConfigPanel] Plan selected:',
+							e.target.value
+						);
 						setSelectedPlanId(e.target.value);
 					}}
 					className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
 					disabled={isRunning}
 				>
 					<option value="">Select a plan…</option>
-					{[...plansByFolder.entries()].map(([folderId, folderPlans]) => (
-						<optgroup
-							key={folderId}
-							label={folderMap.get(folderId)?.name ?? 'Unknown folder'}
-						>
-							{folderPlans.map((plan) => (
-								<option key={plan.id} value={plan.id}>
-									{plan.name}
-								</option>
-							))}
-						</optgroup>
-					))}
+					{[...plansByFolder.entries()].map(
+						([folderId, folderPlans]) => (
+							<optgroup
+								key={folderId}
+								label={
+									folderMap.get(folderId)?.name ??
+									'Unknown folder'
+								}
+							>
+								{folderPlans.map((plan) => (
+									<option key={plan.id} value={plan.id}>
+										{plan.name}
+									</option>
+								))}
+							</optgroup>
+						)
+					)}
 				</select>
 
 				{selectedPlan && (
 					<p className="text-[11px] text-muted-foreground">
-						{selectedPlan.inputs.length} input{selectedPlan.inputs.length !== 1 ? 's' : ''}
+						{selectedPlan.inputs.length} input
+						{selectedPlan.inputs.length !== 1 ? 's' : ''}
 						{' · '}
-						<span className="capitalize">{selectedPlan.evalStrategy}</span> eval
+						<span className="capitalize">
+							{selectedPlan.evalStrategy}
+						</span>{' '}
+						eval
 					</p>
 				)}
 
 				{hasPlan && !planHasInputs && (
 					<p className="text-[11px] text-warning">
-						This plan has no inputs. Add at least one input in the Build surface.
+						This plan has no inputs. Add at least one input in the
+						Build surface.
 					</p>
 				)}
 			</div>
 
 			{/* ── Model multi-select ── */}
 			<div className="space-y-2">
-				<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Models</p>
+				<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+					Models
+				</p>
 
 				{models.length === 0 ? (
 					<p className="text-sm text-dim-foreground py-1">
@@ -158,13 +184,17 @@ export default function RunConfigPanel() {
 								key={model.id}
 								className={cn(
 									'flex items-center gap-2.5 py-1.5 px-2 rounded-md cursor-pointer',
-									isRunning ? 'opacity-50 cursor-default' : 'hover:bg-muted',
+									isRunning
+										? 'opacity-50 cursor-default'
+										: 'hover:bg-muted'
 								)}
 							>
 								<input
 									type="checkbox"
 									checked={selectedModelIds.has(model.id)}
-									onChange={() => !isRunning && toggleModel(model.id)}
+									onChange={() =>
+										!isRunning && toggleModel(model.id)
+									}
 									disabled={isRunning}
 									className="shrink-0 accent-primary"
 								/>
@@ -184,7 +214,10 @@ export default function RunConfigPanel() {
 					<div className="space-y-1.5">
 						<div className="flex justify-between text-[11px] text-muted-foreground">
 							<span>Running…</span>
-							<span>{runProgress.completed} / {runProgress.total} trials</span>
+							<span>
+								{runProgress.completed} / {runProgress.total}{' '}
+								trials
+							</span>
 						</div>
 						<div className="h-1 bg-muted rounded-full overflow-hidden">
 							<div
@@ -222,7 +255,6 @@ export default function RunConfigPanel() {
 					</p>
 				)}
 			</div>
-
 		</div>
 	);
 }

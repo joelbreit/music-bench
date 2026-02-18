@@ -20,7 +20,10 @@ const openRouterAdapter = new OpenRouterAdapter();
 export function getAdapter(model: Model): LLMAdapter {
 	const hasKey = Boolean(localStorage.getItem(API_KEY_STORAGE));
 	if (!hasKey) {
-		console.log('[adapters] No API key — using MockAdapter for', model.name);
+		console.log(
+			'[adapters] No API key — using MockAdapter for',
+			model.name
+		);
 		return mockAdapter;
 	}
 	// All providers (anthropic / openai / other) route through OpenRouter.

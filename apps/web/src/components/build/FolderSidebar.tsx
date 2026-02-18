@@ -35,7 +35,11 @@ interface FolderNode {
 	children: FolderNode[];
 }
 
-function buildTree(folders: Folder[], plans: Plan[], parentId: string | null = null): FolderNode[] {
+function buildTree(
+	folders: Folder[],
+	plans: Plan[],
+	parentId: string | null = null
+): FolderNode[] {
 	return folders
 		.filter((f) => f.parentId === parentId)
 		.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
@@ -101,7 +105,7 @@ function PlanRow({
 		<div
 			className={cn(
 				'group flex items-center gap-1 pr-1 py-0.5 rounded-md transition-colors duration-150',
-				isActive ? 'bg-accent' : 'hover:bg-muted',
+				isActive ? 'bg-accent' : 'hover:bg-muted'
 			)}
 			style={{ paddingLeft: `${indent}px` }}
 		>
@@ -110,7 +114,10 @@ function PlanRow({
 				onClick={() => {
 					if (isRenaming) return;
 					console.log('[FolderSidebar] Navigating to plan:', plan.id);
-					navigate({ to: '/build/plan/$planId', params: { planId: plan.id } });
+					navigate({
+						to: '/build/plan/$planId',
+						params: { planId: plan.id },
+					});
 				}}
 				tabIndex={isRenaming ? -1 : 0}
 				className="flex flex-1 min-w-0 items-center py-0.5 text-left"
@@ -134,7 +141,7 @@ function PlanRow({
 							'flex-1 truncate text-xs',
 							isActive
 								? 'text-foreground'
-								: 'text-muted-foreground group-hover:text-foreground',
+								: 'text-muted-foreground group-hover:text-foreground'
 						)}
 					>
 						{plan.name}
@@ -178,8 +185,14 @@ function PlanRow({
 								</DropdownMenuSubTrigger>
 								<DropdownMenuSubContent className="w-44">
 									{otherFolders.map((f) => (
-										<DropdownMenuItem key={f.id} onSelect={() => onMoveTo(f.id)}>
-											<FolderIcon size={12} className="mr-2" />
+										<DropdownMenuItem
+											key={f.id}
+											onSelect={() => onMoveTo(f.id)}
+										>
+											<FolderIcon
+												size={12}
+												className="mr-2"
+											/>
 											{f.name}
 										</DropdownMenuItem>
 									))}
@@ -340,8 +353,10 @@ export default function FolderSidebar() {
 	const [renamingPlanId, setRenamingPlanId] = useState<string | null>(null);
 	const [planRenameValue, setPlanRenameValue] = useState('');
 
-	const folders = useLiveQuery(() => db.folders.orderBy('createdAt').toArray()) ?? [];
-	const plans = useLiveQuery(() => db.plans.orderBy('createdAt').toArray()) ?? [];
+	const folders =
+		useLiveQuery(() => db.folders.orderBy('createdAt').toArray()) ?? [];
+	const plans =
+		useLiveQuery(() => db.plans.orderBy('createdAt').toArray()) ?? [];
 
 	// Read the active plan ID directly from the route
 	const activePlanId = useRouterState({
@@ -383,7 +398,12 @@ export default function FolderSidebar() {
 		if (!renamingId) return;
 		const trimmed = renameValue.trim();
 		if (trimmed) {
-			console.log('[FolderSidebar] Renaming folder', renamingId, 'to:', trimmed);
+			console.log(
+				'[FolderSidebar] Renaming folder',
+				renamingId,
+				'to:',
+				trimmed
+			);
 			await db.folders.update(renamingId, { name: trimmed });
 		}
 		setRenamingId(null);
@@ -398,7 +418,12 @@ export default function FolderSidebar() {
 	async function createFolder(parentId: string | null) {
 		const id = crypto.randomUUID();
 		console.log('[FolderSidebar] Creating folder, parentId:', parentId);
-		await db.folders.add({ id, name: 'New Folder', parentId, createdAt: new Date() });
+		await db.folders.add({
+			id,
+			name: 'New Folder',
+			parentId,
+			createdAt: new Date(),
+		});
 		// Ensure the parent (if any) is not collapsed so the new folder is visible
 		if (parentId) {
 			setCollapsed((prev) => {
@@ -414,7 +439,11 @@ export default function FolderSidebar() {
 
 	async function deleteTree(node: FolderNode) {
 		// Collect all IDs in the subtree
-		function collectIds(n: FolderNode, planIds: string[], folderIds: string[]) {
+		function collectIds(
+			n: FolderNode,
+			planIds: string[],
+			folderIds: string[]
+		) {
 			planIds.push(...n.plans.map((p) => p.id));
 			folderIds.push(n.folder.id);
 			n.children.forEach((c) => collectIds(c, planIds, folderIds));
@@ -433,7 +462,12 @@ export default function FolderSidebar() {
 
 		if (!window.confirm(msg)) return;
 
-		console.log('[FolderSidebar] Deleting folders:', folderIds, 'plans:', planIds);
+		console.log(
+			'[FolderSidebar] Deleting folders:',
+			folderIds,
+			'plans:',
+			planIds
+		);
 		await db.plans.bulkDelete(planIds);
 		await db.folders.bulkDelete(folderIds);
 
@@ -456,8 +490,16 @@ export default function FolderSidebar() {
 		if (!renamingPlanId) return;
 		const trimmed = planRenameValue.trim();
 		if (trimmed) {
-			console.log('[FolderSidebar] Renaming plan', renamingPlanId, 'to:', trimmed);
-			await db.plans.update(renamingPlanId, { name: trimmed, updatedAt: new Date() });
+			console.log(
+				'[FolderSidebar] Renaming plan',
+				renamingPlanId,
+				'to:',
+				trimmed
+			);
+			await db.plans.update(renamingPlanId, {
+				name: trimmed,
+				updatedAt: new Date(),
+			});
 		}
 		setRenamingPlanId(null);
 		setPlanRenameValue('');
@@ -508,7 +550,12 @@ export default function FolderSidebar() {
 	}
 
 	async function deletePlan(plan: Plan) {
-		if (!window.confirm(`Delete plan "${plan.name}"? This cannot be undone.`)) return;
+		if (
+			!window.confirm(
+				`Delete plan "${plan.name}"? This cannot be undone.`
+			)
+		)
+			return;
 		console.log('[FolderSidebar] Deleting plan:', plan.id);
 		await db.plans.delete(plan.id);
 		if (activePlanId === plan.id) {
@@ -517,7 +564,12 @@ export default function FolderSidebar() {
 	}
 
 	async function movePlanToFolder(plan: Plan, folderId: string) {
-		console.log('[FolderSidebar] Moving plan', plan.id, 'to folder:', folderId);
+		console.log(
+			'[FolderSidebar] Moving plan',
+			plan.id,
+			'to folder:',
+			folderId
+		);
 		await db.plans.update(plan.id, { folderId, updatedAt: new Date() });
 		// Expand destination folder so the moved plan is visible
 		setCollapsed((prev) => {
@@ -569,7 +621,9 @@ export default function FolderSidebar() {
 								onRenameCancel={cancelRenamePlan}
 								onDuplicate={() => duplicatePlan(plan)}
 								onDelete={() => deletePlan(plan)}
-								onMoveTo={(folderId) => movePlanToFolder(plan, folderId)}
+								onMoveTo={(folderId) =>
+									movePlanToFolder(plan, folderId)
+								}
 							/>
 						))}
 					</>
@@ -582,7 +636,9 @@ export default function FolderSidebar() {
 		<div className="flex flex-col h-full">
 			<div className="flex-1 overflow-y-auto py-2 px-1 space-y-px">
 				{folders.length === 0 ? (
-					<p className="text-xs text-dim-foreground px-2 py-4 text-center">No folders yet</p>
+					<p className="text-xs text-dim-foreground px-2 py-4 text-center">
+						No folders yet
+					</p>
 				) : (
 					renderTree(tree, 0)
 				)}

@@ -31,7 +31,7 @@ function ProviderBadge({ provider }: { provider: Provider }) {
 		<span
 			className={cn(
 				'shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium',
-				PROVIDER_COLORS[provider],
+				PROVIDER_COLORS[provider]
 			)}
 		>
 			{PROVIDER_LABELS[provider]}
@@ -46,7 +46,7 @@ const API_KEY_STORAGE = 'mb:openrouter-key';
 function ApiKeySection() {
 	// Lazy initializer reads localStorage once at mount — no effect needed.
 	const [apiKey, setApiKey] = useState<string>(
-		() => localStorage.getItem(API_KEY_STORAGE) ?? '',
+		() => localStorage.getItem(API_KEY_STORAGE) ?? ''
 	);
 	const [showKey, setShowKey] = useState(false);
 
@@ -79,7 +79,8 @@ function ApiKeySection() {
 				</button>
 			</div>
 			<p className="text-[11px] text-dim-foreground">
-				Stored in localStorage — never sent to any server other than OpenRouter.
+				Stored in localStorage — never sent to any server other than
+				OpenRouter.
 			</p>
 		</div>
 	);
@@ -121,7 +122,9 @@ function AddModelForm({ onDone }: { onDone: () => void }) {
 				<input
 					value={name}
 					onChange={(e) => setName(e.target.value)}
-					onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+					onKeyDown={(e) => {
+						if (e.key === 'Enter') submit();
+					}}
 					placeholder="e.g. anthropic/claude-opus-4-6"
 					autoFocus
 					className="w-full rounded border border-input bg-background px-2.5 py-1.5 text-sm text-foreground font-mono outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground"
@@ -130,14 +133,18 @@ function AddModelForm({ onDone }: { onDone: () => void }) {
 
 			{/* Provider */}
 			<div className="space-y-1">
-				<label className="text-[11px] text-muted-foreground">Provider</label>
+				<label className="text-[11px] text-muted-foreground">
+					Provider
+				</label>
 				<select
 					value={provider}
 					onChange={(e) => setProvider(e.target.value as Provider)}
 					className="w-full rounded border border-input bg-background px-2.5 py-1.5 text-sm text-foreground outline-none focus:ring-1 focus:ring-ring"
 				>
 					{PROVIDERS.map((p) => (
-						<option key={p} value={p}>{PROVIDER_LABELS[p]}</option>
+						<option key={p} value={p}>
+							{PROVIDER_LABELS[p]}
+						</option>
 					))}
 				</select>
 			</div>
@@ -145,7 +152,10 @@ function AddModelForm({ onDone }: { onDone: () => void }) {
 			{/* API base (optional) */}
 			<div className="space-y-1">
 				<label className="text-[11px] text-muted-foreground">
-					API base URL <span className="text-dim-foreground">(optional — leave blank for OpenRouter)</span>
+					API base URL{' '}
+					<span className="text-dim-foreground">
+						(optional — leave blank for OpenRouter)
+					</span>
 				</label>
 				<input
 					value={apiBase}
@@ -181,7 +191,11 @@ function AddModelForm({ onDone }: { onDone: () => void }) {
 
 function ModelRow({ model }: { model: Model }) {
 	async function toggleEnabled() {
-		console.log('[ModelRegistry] Toggling model:', model.id, !model.enabled);
+		console.log(
+			'[ModelRegistry] Toggling model:',
+			model.id,
+			!model.enabled
+		);
 		await db.models.update(model.id, { enabled: !model.enabled });
 	}
 
@@ -237,7 +251,6 @@ export default function ModelRegistryDialog({
 				</DialogHeader>
 
 				<div className="space-y-6 pt-2">
-
 					{/* ── API key ── */}
 					<ApiKeySection />
 
@@ -248,18 +261,26 @@ export default function ModelRegistryDialog({
 						</p>
 
 						{models.length === 0 && !showAddForm && (
-							<p className="text-xs text-dim-foreground py-2">No models configured.</p>
+							<p className="text-xs text-dim-foreground py-2">
+								No models configured.
+							</p>
 						)}
 
 						{models.length > 0 && (
 							<div className="divide-y divide-border">
-								{enabled.map((m) => <ModelRow key={m.id} model={m} />)}
-								{disabled.map((m) => <ModelRow key={m.id} model={m} />)}
+								{enabled.map((m) => (
+									<ModelRow key={m.id} model={m} />
+								))}
+								{disabled.map((m) => (
+									<ModelRow key={m.id} model={m} />
+								))}
 							</div>
 						)}
 
 						{showAddForm ? (
-							<AddModelForm onDone={() => setShowAddForm(false)} />
+							<AddModelForm
+								onDone={() => setShowAddForm(false)}
+							/>
 						) : (
 							<button
 								type="button"
@@ -271,7 +292,6 @@ export default function ModelRegistryDialog({
 							</button>
 						)}
 					</div>
-
 				</div>
 			</DialogContent>
 		</Dialog>

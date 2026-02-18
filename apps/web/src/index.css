@@ -15,8 +15,10 @@
 	--radius-4xl: calc(var(--radius) + 16px);
 
 	/* Fonts */
-	--font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-	--font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+	--font-sans:
+		'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+	--font-mono:
+		'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
 
 	/* Shadcn color tokens */
 	--color-background: var(--background);
@@ -79,29 +81,31 @@
 
 	/* Layout */
 	--background: oklch(0.97 0.006 85); /* near-white, warm paper tone */
-	--foreground: oklch(0.20 0.006 250); /* dark charcoal, slight cool */
+	--foreground: oklch(0.2 0.006 250); /* dark charcoal, slight cool */
 
 	/* Surfaces */
 	--card: oklch(1 0 0); /* pure white */
-	--card-foreground: oklch(0.20 0.006 250);
+	--card-foreground: oklch(0.2 0.006 250);
 	--popover: oklch(1 0 0);
-	--popover-foreground: oklch(0.20 0.006 250);
+	--popover-foreground: oklch(0.2 0.006 250);
 
 	/* Interactive */
-	--primary: oklch(0.50 0.20 240); /* cool blue, darkened for light bg contrast */
+	--primary: oklch(
+		0.5 0.2 240
+	); /* cool blue, darkened for light bg contrast */
 	--primary-foreground: oklch(0.98 0 0);
 
 	/* Secondary surfaces */
 	--secondary: oklch(0.93 0.004 85); /* warm off-white */
-	--secondary-foreground: oklch(0.20 0.006 250);
+	--secondary-foreground: oklch(0.2 0.006 250);
 
 	/* Muted (surface alt — nested containers, table stripes) */
 	--muted: oklch(0.94 0.004 85);
-	--muted-foreground: oklch(0.50 0.004 250); /* text muted */
+	--muted-foreground: oklch(0.5 0.004 250); /* text muted */
 
 	/* Accent (hover/selected background) */
 	--accent: oklch(0.93 0.008 240); /* light blue-tinted surface */
-	--accent-foreground: oklch(0.20 0.006 250);
+	--accent-foreground: oklch(0.2 0.006 250);
 
 	/* States */
 	--destructive: oklch(0.52 0.22 22);
@@ -110,7 +114,7 @@
 	/* Chrome */
 	--border: oklch(0.88 0 0);
 	--input: oklch(0.88 0 0);
-	--ring: oklch(0.50 0.20 240); /* focus ring matches primary */
+	--ring: oklch(0.5 0.2 240); /* focus ring matches primary */
 
 	/* Semantic */
 	--success: oklch(0.48 0.18 145);
@@ -119,7 +123,7 @@
 	--warning-foreground: oklch(0.12 0 0);
 	--error: oklch(0.52 0.22 22);
 	--error-foreground: oklch(0.98 0 0);
-	--info: oklch(0.48 0.20 290);
+	--info: oklch(0.48 0.2 290);
 	--info-foreground: oklch(0.98 0 0);
 
 	/* Model colors — medium-vivid, readable on light and dark surfaces.
@@ -127,21 +131,21 @@
 	--chart-1: oklch(0.68 0.17 65); /* amber — Anthropic */
 	--chart-2: oklch(0.58 0.17 165); /* emerald — OpenAI */
 	--chart-3: oklch(0.56 0.18 220); /* sky — Google */
-	--chart-4: oklch(0.53 0.20 280); /* indigo — Meta */
-	--chart-5: oklch(0.60 0.15 200); /* cyan — Mistral */
-	--chart-6: oklch(0.58 0.20 10); /* rose — Cohere */
+	--chart-4: oklch(0.53 0.2 280); /* indigo — Meta */
+	--chart-5: oklch(0.6 0.15 200); /* cyan — Mistral */
+	--chart-6: oklch(0.58 0.2 10); /* rose — Cohere */
 	--chart-7: oklch(0.63 0.17 130); /* lime */
-	--chart-8: oklch(0.55 0.20 305); /* violet */
+	--chart-8: oklch(0.55 0.2 305); /* violet */
 
 	/* Sidebar */
 	--sidebar: oklch(0.94 0.004 85);
-	--sidebar-foreground: oklch(0.20 0.006 250);
-	--sidebar-primary: oklch(0.50 0.20 240);
+	--sidebar-foreground: oklch(0.2 0.006 250);
+	--sidebar-primary: oklch(0.5 0.2 240);
 	--sidebar-primary-foreground: oklch(0.98 0 0);
 	--sidebar-accent: oklch(0.93 0.008 240);
-	--sidebar-accent-foreground: oklch(0.20 0.006 250);
+	--sidebar-accent-foreground: oklch(0.2 0.006 250);
 	--sidebar-border: oklch(0.88 0 0);
-	--sidebar-ring: oklch(0.50 0.20 240);
+	--sidebar-ring: oklch(0.5 0.2 240);
 }
 
 /* ─── Dark mode (default working environment) ────────────────────────────── */
@@ -166,7 +170,7 @@
 	--secondary-foreground: oklch(0.92 0.008 80);
 
 	/* Muted (surface alt) */
-	--muted: oklch(0.20 0.005 250);
+	--muted: oklch(0.2 0.005 250);
 	--muted-foreground: oklch(0.56 0.006 250); /* text muted — mid gray */
 
 	/* Accent (hover/selected background — blue-tinted dark surface) */
@@ -184,23 +188,23 @@
 
 	/* Semantic */
 	--success: oklch(0.68 0.18 145);
-	--success-foreground: oklch(0.10 0 0);
+	--success-foreground: oklch(0.1 0 0);
 	--warning: oklch(0.78 0.16 75);
-	--warning-foreground: oklch(0.10 0 0);
+	--warning-foreground: oklch(0.1 0 0);
 	--error: oklch(0.67 0.22 22);
 	--error-foreground: oklch(0.98 0 0);
-	--info: oklch(0.65 0.20 290);
+	--info: oklch(0.65 0.2 290);
 	--info-foreground: oklch(0.98 0 0);
 
 	/* Model colors — slightly brighter in dark mode */
 	--chart-1: oklch(0.75 0.17 65); /* amber */
 	--chart-2: oklch(0.65 0.17 165); /* emerald */
 	--chart-3: oklch(0.65 0.18 220); /* sky */
-	--chart-4: oklch(0.60 0.20 280); /* indigo */
+	--chart-4: oklch(0.6 0.2 280); /* indigo */
 	--chart-5: oklch(0.68 0.15 200); /* cyan */
-	--chart-6: oklch(0.67 0.20 10); /* rose */
+	--chart-6: oklch(0.67 0.2 10); /* rose */
 	--chart-7: oklch(0.72 0.17 130); /* lime */
-	--chart-8: oklch(0.63 0.20 305); /* violet */
+	--chart-8: oklch(0.63 0.2 305); /* violet */
 
 	/* Sidebar */
 	--sidebar: oklch(0.17 0.005 250);

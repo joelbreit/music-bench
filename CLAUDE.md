@@ -19,7 +19,7 @@ All commands run from `apps/web/` using **pnpm**:
 - `pnpm format:check` — Prettier (check only)
 - `pnpm preview` — serve the production build locally
 
-No test runner is configured yet.
+Run `pnpm lint && pnpm format` after completing each task. No test runner is configured yet.
 
 ## Tech Stack
 

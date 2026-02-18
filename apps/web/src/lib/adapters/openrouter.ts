@@ -7,7 +7,9 @@ export class OpenRouterAdapter implements LLMAdapter {
 	async call(model: Model, prompt: string): Promise<LLMCallResult> {
 		const apiKey = localStorage.getItem(API_KEY_STORAGE) ?? '';
 		if (!apiKey) {
-			throw new Error('OpenRouter API key not configured. Add it in Settings.');
+			throw new Error(
+				'OpenRouter API key not configured. Add it in Settings.'
+			);
 		}
 
 		const url = model.apiBase ?? OPENROUTER_URL;
@@ -18,7 +20,7 @@ export class OpenRouterAdapter implements LLMAdapter {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${apiKey}`,
+				Authorization: `Bearer ${apiKey}`,
 				'HTTP-Referer': window.location.origin,
 			},
 			body: JSON.stringify({
@@ -34,7 +36,7 @@ export class OpenRouterAdapter implements LLMAdapter {
 			throw new Error(`OpenRouter ${res.status}: ${text}`);
 		}
 
-		const data = await res.json() as {
+		const data = (await res.json()) as {
 			choices?: { message?: { content?: string } }[];
 			usage?: { total_tokens?: number };
 		};
@@ -42,7 +44,12 @@ export class OpenRouterAdapter implements LLMAdapter {
 		const output = data.choices?.[0]?.message?.content ?? '';
 		const tokens = data.usage?.total_tokens ?? 0;
 
-		console.log('[OpenRouterAdapter] Done:', model.name, `${latencyMs}ms`, `${tokens} tokens`);
+		console.log(
+			'[OpenRouterAdapter] Done:',
+			model.name,
+			`${latencyMs}ms`,
+			`${tokens} tokens`
+		);
 		return { output, latencyMs, tokens };
 	}
 }

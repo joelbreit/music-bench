@@ -35,7 +35,12 @@ export interface Model {
 
 // ─── Run & Trial ──────────────────────────────────────────────────────────────
 
-export type RunStatus = 'queued' | 'running' | 'complete' | 'failed' | 'cancelled';
+export type RunStatus =
+	| 'queued'
+	| 'running'
+	| 'complete'
+	| 'failed'
+	| 'cancelled';
 
 export interface Run {
 	id: string;

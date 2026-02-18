@@ -23,7 +23,9 @@ interface UIStore {
 	runProgress: { completed: number; total: number } | null;
 	cancelRequested: boolean;
 	setActiveRun: (id: string | null) => void;
-	setRunProgress: (progress: { completed: number; total: number } | null) => void;
+	setRunProgress: (
+		progress: { completed: number; total: number } | null
+	) => void;
 	requestCancel: () => void;
 	clearCancel: () => void;
 
@@ -50,7 +52,10 @@ export const useUIStore = create<UIStore>()(
 				console.log('[store] Toggling theme');
 				set((s) => {
 					const next = s.theme === 'dark' ? 'light' : 'dark';
-					document.documentElement.classList.toggle('dark', next === 'dark');
+					document.documentElement.classList.toggle(
+						'dark',
+						next === 'dark'
+					);
 					return { theme: next };
 				});
 			},
@@ -73,7 +78,11 @@ export const useUIStore = create<UIStore>()(
 			cancelRequested: false,
 			setActiveRun: (id) => {
 				console.log('[store] Active run:', id);
-				set({ activeRunId: id, runProgress: null, cancelRequested: false });
+				set({
+					activeRunId: id,
+					runProgress: null,
+					cancelRequested: false,
+				});
 			},
 			setRunProgress: (progress) => set({ runProgress: progress }),
 			requestCancel: () => {
@@ -104,6 +113,6 @@ export const useUIStore = create<UIStore>()(
 			name: 'music-bench-ui',
 			// Only persist theme; all selection state resets on reload
 			partialize: (s) => ({ theme: s.theme }),
-		},
-	),
+		}
+	)
 );

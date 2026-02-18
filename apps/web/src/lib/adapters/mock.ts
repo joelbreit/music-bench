@@ -6,7 +6,11 @@ const DEFAULT_DELAY_MS = 500;
 let callCount = 0;
 
 export class MockAdapter implements LLMAdapter {
-	async call(_model: Model, _prompt: string, input: string): Promise<LLMCallResult> {
+	async call(
+		_model: Model,
+		_prompt: string,
+		input: string
+	): Promise<LLMCallResult> {
 		const index = ++callCount;
 		const start = Date.now();
 		await new Promise<void>((r) => setTimeout(r, DEFAULT_DELAY_MS));
