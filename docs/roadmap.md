@@ -70,6 +70,7 @@ graph TD
     P3 --> P4
     D5 --> T11
     T11 --> T12
+    P2 --> P6[Phase 6: Import/Export]
 
     subgraph P1
         T1[T1 Theme ✅]
@@ -106,6 +107,12 @@ graph TD
         T20[T20 Score Engine ✅]
         T21[T21 Leaderboard ✅]
         T22[T22 Trial Table ✅]
+    end
+
+    subgraph P6
+        T23[T23 Plan Format Guide]
+        T24[T24 Plan Export]
+        T25[T25 Plan Import]
     end
 ```
 
@@ -360,6 +367,58 @@ Lower half of right panel.
 - Sortable columns: model, judgment, latency, tokens (toggle asc/desc)
 - Filter bar: model multi-select chips, input text search, row count
 - Click a row to expand: full input, raw output block, MusicRenderer preview
+
+---
+
+## Phase 6 — Import / Export Plans
+
+Allows plans to be shared, backed up, and created with LLM assistance. The Build surface gains import and export affordances.
+
+### T23 — Plan Format Guide
+
+Write `docs/plan-format.md` — an LLM-friendly reference document describing the canonical JSON format for a MusicBench plan.
+
+The guide must be self-contained enough that an LLM given only this document can produce a valid import file with no other context. It should include:
+
+- **Schema** — every field, its type, allowed values, and whether it is required or optional:
+  - `name: string` — human-readable plan name
+  - `promptTemplate: string` — prompt sent to the model; must contain `{{input}}`
+  - `inputs: string[]` — one or more test inputs (non-empty array)
+  - `evalStrategy: "parse" | "rate" | "compare"` — judgment method
+  - `parseCode: string | null` — required when `evalStrategy` is `"parse"`; a JS function body with the signature `function assert(output: string): boolean`; `null` otherwise
+  - `folder: string` (optional, default `"Imported"`) — destination folder name; will be created if it does not exist
+- **`evalStrategy` semantics** — brief explanation of each strategy so the LLM can choose the right one:
+  - `parse` — the model's output is passed to `parseCode`; pass/fail is automatic
+  - `rate` — a human rates each output on a 1–5 scale
+  - `compare` — a human ranks outputs across models side-by-side per input
+- **`parseCode` contract** — the function body string is wrapped as `new Function("output", body)`; it must return `true` (pass) or `false` (fail); any thrown error is treated as a fail
+- **Example plans** — at least three complete JSON examples:
+  1. A `parse` plan that checks whether the output contains ABC notation headers (`X:`, `T:`, `M:`, `K:`)
+  2. A `rate` plan for evaluating melodic quality with several descriptive input prompts
+  3. A `compare` plan for side-by-side comparison of harmonic style
+- **Import wire format** — the exact JSON envelope expected by T25 (single plan object or array of plan objects)
+
+### T24 — Plan Export
+
+Add an export action to the Build surface so any plan can be downloaded as a `.json` file.
+
+- Export button in the plan editor header (or plan context menu); icon: `Download` from lucide
+- Serialises the plan to the wire format defined in T23 (omit `id`, `createdAt`, `updatedAt`; include `folder` using the parent folder's name)
+- Triggers a browser download: `<plan-name>.musicbench.json`
+- "Export All" option in the folder context menu: exports every plan in the folder as a JSON array in a single file named `<folder-name>.musicbench.json`
+
+### T25 — Plan Import
+
+Add an import flow to the Build surface.
+
+- "Import Plan" button in the folder sidebar toolbar (icon: `Upload`)
+- Opens a modal with two tabs:
+  - **File** — file input accepting `.json`; reads and parses on selection
+  - **Paste** — textarea; parse on a "Parse" button click
+- Validation: schema check against the T23 format; inline error messages for each field that fails
+- Preview: show a read-only summary of the plan(s) to be created (name, strategy, input count, parseCode presence) before committing
+- On confirm: create the plan(s) in Dexie; resolve or create the `folder` by name; navigate to the first imported plan in the editor
+- Support both single-plan objects and arrays for bulk import
 
 ---
 
