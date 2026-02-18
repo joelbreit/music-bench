@@ -193,7 +193,7 @@ Implement the persistence layer (D1) and a Zustand store (D2) wired to it.
 
 Two-panel layout: folder/plan tree on the left, plan editor on the right.
 
-### T5 — Folder Sidebar
+### T5 — Folder Sidebar ✅
 
 Narrow left panel (~220px) with the folder tree.
 
