@@ -14,11 +14,11 @@ These are architectural choices that must be settled before the phases that depe
 
 All domain objects (Plans, Runs, Trials, Judgments) need to be stored somewhere.
 
-| Option | Pros | Cons |
-|---|---|---|
-| `localStorage` | Zero setup, synchronous, works offline | ~5MB cap, no queries, blocks main thread on large writes |
-| `IndexedDB` via Dexie.js | Large capacity, async, supports indexes and queries | More setup, async everywhere |
-| Backend API | Unlimited, shareable, multi-user ready | Requires building infra, adds auth concerns |
+| Option                   | Pros                                                | Cons                                                     |
+| ------------------------ | --------------------------------------------------- | -------------------------------------------------------- |
+| `localStorage`           | Zero setup, synchronous, works offline              | ~5MB cap, no queries, blocks main thread on large writes |
+| `IndexedDB` via Dexie.js | Large capacity, async, supports indexes and queries | More setup, async everywhere                             |
+| Backend API              | Unlimited, shareable, multi-user ready              | Requires building infra, adds auth concerns              |
 
 **Recommendation:** Start with Dexie (IndexedDB). Storage needs are small today but Trials accumulate quickly. Dexie's API is clean and the async cost is low in React. A backend can be added later with the same interface.
 
@@ -26,11 +26,11 @@ All domain objects (Plans, Runs, Trials, Judgments) need to be stored somewhere.
 
 Client state (selected plan, active run, UI state) needs a home separate from persistence.
 
-| Option | Notes |
-|---|---|
-| Zustand | Lightweight, minimal boilerplate, good for cross-component state |
-| React Context + useReducer | No extra dep, fine for simpler trees |
-| Jotai | Atom-based, good for derived/computed state |
+| Option                     | Notes                                                            |
+| -------------------------- | ---------------------------------------------------------------- |
+| Zustand                    | Lightweight, minimal boilerplate, good for cross-component state |
+| React Context + useReducer | No extra dep, fine for simpler trees                             |
+| Jotai                      | Atom-based, good for derived/computed state                      |
 
 **Recommendation:** Zustand. The domain has several independent slices (plans, runs, evaluation queue) and Zustand's slice pattern maps cleanly to them.
 
@@ -38,11 +38,11 @@ Client state (selected plan, active run, UI state) needs a home separate from pe
 
 Four surfaces (Build, Run, Evaluate, Explore) plus deep-link URLs for individual plans, runs, and trials.
 
-| Option | Notes |
-|---|---|
+| Option          | Notes                                          |
+| --------------- | ---------------------------------------------- |
 | TanStack Router | Type-safe routes, file-based optional, good DX |
-| React Router v7 | Mature, widely documented |
-| Wouter | Minimal, no file-based routing |
+| React Router v7 | Mature, widely documented                      |
+| Wouter          | Minimal, no file-based routing                 |
 
 **Recommendation:** TanStack Router. Type-safe `Link` and `useParams` catches errors early and the project will have enough route nesting to benefit.
 
@@ -72,25 +72,25 @@ graph TD
     T11 --> T12
 
     subgraph P1
-        T1[T1 Theme]
-        T2[T2 App Shell]
-        T3[T3 Domain Types]
-        T4[T4 Data Store]
+        T1[T1 Theme ✅]
+        T2[T2 App Shell ✅]
+        T3[T3 Domain Types ✅]
+        T4[T4 Data Store ✅]
     end
 
     subgraph P2
-        T5[T5 Folder Sidebar]
-        T6[T6 Plan List]
-        T7[T7 Plan Editor]
-        T8[T8 Parse Editor]
+        T5[T5 Folder Sidebar ✅]
+        T6[T6 Plan List ✅]
+        T7[T7 Plan Editor ✅]
+        T8[T8 Parse Editor ✅]
     end
 
     subgraph P3
-        T9[T9 Model Registry]
-        T10[T10 Run Config UI]
-        T11[T11 LLM Adapter]
-        T12[T12 Run Execution]
-        T13[T13 Parse Verdict]
+        T9[T9 Model Registry ✅]
+        T10[T10 Run Config UI ✅]
+        T11[T11 LLM Adapter ✅]
+        T12[T12 Run Execution ✅]
+        T13[T13 Parse Verdict ✅]
         T14[T14 Run History]
     end
 
@@ -250,26 +250,20 @@ Pluggable adapter layer. Build a mock first; real adapters follow (D5).
 - Adapter registry: maps provider name to adapter class; selected by `Model.provider`
 - API key configuration UI (simple settings form; key stored in localStorage under a namespaced key)
 
-### T12 — Run Execution Engine
+### T12 — Run Execution Engine ✅
 
 Core async logic that drives a Run from `pending` to `complete`.
 
-- On launch: create Run record (status: `running`), create `Trial` records (one per Model × Input, status: `pending`)
-- Iterate trials sequentially (parallel execution is a future concern); for each trial:
-  - Interpolate prompt template with input value
-  - Call `LLMAdapter.call()`; update Trial with output, latency, tokens, status: `complete`
-  - If `ParseStrategy`: immediately run the parse assertion (T13) and write a Verdict
-  - Update Run progress in store
-- On any unrecoverable error: mark Trial status `failed`, continue remaining trials
-- Cancel support: a "Stop" button sets a cancellation flag checked between trials
+- `src/lib/runExecutor.ts` — `executeRun(runId, onProgress, isCancelled)`: fetches run/plan/models, creates trials (model × input order), executes sequentially, writes verdicts for parse plans
+- `src/hooks/useRunExecutor.ts` — `useRunExecutor()`: watches `activeRunId` in Zustand, fires executor, clears active run on completion
+- Mounted in `RunPage`; cancellation checked between trials via `useUIStore.getState().cancelRequested`
+- Failed trials marked `status: 'failed'`; execution continues for remaining trials
 
-### T13 — Parse Verdict Engine
+### T13 — Parse Verdict Engine ✅
 
 Called inline by T12 for Parse-strategy plans.
 
-- Execute the plan's `parseCode` assertion against the trial output in a sandboxed environment
-- Write a `Verdict` judgment (`pass: true/false`) with any thrown error captured in `error`
-- If assertion throws, verdict is `fail` with the error message
+- `src/lib/parseVerdict.ts` — `runParseAssertion(trialId, parseCode, output)`: runs assertion via `new Function()`, returns `Verdict` with `pass`/`error`; thrown errors captured as `pass: false`
 
 ### T14 — Run History List
 

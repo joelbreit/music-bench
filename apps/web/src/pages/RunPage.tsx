@@ -1,6 +1,9 @@
 import RunConfigPanel from '@/components/run/RunConfigPanel';
+import { useRunExecutor } from '@/hooks/useRunExecutor';
 
 export default function RunPage() {
+	useRunExecutor();
+
 	return (
 		<div className="flex flex-1 overflow-hidden">
 			{/* Left: run configuration — T10 */}
