@@ -7,7 +7,8 @@ import {
 } from 'react';
 import { useParams } from '@tanstack/react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ChevronUp, ChevronDown, Plus, Trash2 } from 'lucide-react';
+import { ChevronUp, ChevronDown, Plus, Trash2, Download } from 'lucide-react';
+import { exportSinglePlan } from '@/lib/exportPlan';
 import { EditorView, basicSetup } from 'codemirror';
 import { javascript } from '@codemirror/lang-javascript';
 import { oneDark } from '@codemirror/theme-one-dark';
@@ -292,7 +293,7 @@ function StrategySelector({
 // Receives the plan as an initial prop. Uses key={plan.id} in the parent so
 // this component remounts (resetting all state) whenever the plan changes.
 
-function PlanEditor({ plan }: { plan: Plan }) {
+function PlanEditor({ plan, folderName }: { plan: Plan; folderName: string }) {
 	const planId = plan.id;
 
 	const [name, setName] = useState(plan.name);
@@ -427,6 +428,26 @@ function PlanEditor({ plan }: { plan: Plan }) {
 		setIsDirty(true);
 	}
 
+	// ── Export ────────────────────────────────────────────────────────────────
+
+	function handleExport() {
+		console.log('[BuildPlanPage] Exporting plan:', planId);
+		exportSinglePlan(
+			{
+				id: planId,
+				folderId: plan.folderId,
+				name,
+				promptTemplate: template,
+				inputs,
+				evalStrategy: strategy,
+				parseCode: strategy === 'parse' ? parseCode : null,
+				createdAt: plan.createdAt,
+				updatedAt: plan.updatedAt,
+			},
+			folderName
+		);
+	}
+
 	// ── Render ────────────────────────────────────────────────────────────────
 
 	return (
@@ -441,6 +462,14 @@ function PlanEditor({ plan }: { plan: Plan }) {
 						className="flex-1 text-2xl font-semibold bg-transparent outline-none text-foreground placeholder:text-muted-foreground border-b border-transparent focus:border-border transition-colors pb-0.5"
 					/>
 					<div className="flex items-center gap-2 shrink-0 pt-1.5">
+						<button
+							type="button"
+							onClick={handleExport}
+							title="Export plan"
+							className="flex items-center justify-center h-6 w-6 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+						>
+							<Download size={14} />
+						</button>
 						{isDirty && (
 							<span className="text-xs text-muted-foreground">
 								Unsaved
@@ -607,9 +636,14 @@ function PlanEditor({ plan }: { plan: Plan }) {
 
 export default function BuildPlanPage() {
 	const { planId } = useParams({ from: '/build/plan/$planId' });
-	const plan = useLiveQuery(() => db.plans.get(planId), [planId]);
+	const data = useLiveQuery(async () => {
+		const plan = await db.plans.get(planId);
+		if (!plan) return undefined;
+		const folder = await db.folders.get(plan.folderId);
+		return { plan, folderName: folder?.name ?? 'Imported' };
+	}, [planId]);
 
-	if (!plan) {
+	if (!data) {
 		return (
 			<div className="flex flex-1 items-center justify-center text-muted-foreground text-sm">
 				Loading…
@@ -617,5 +651,11 @@ export default function BuildPlanPage() {
 		);
 	}
 
-	return <PlanEditor key={plan.id} plan={plan} />;
+	return (
+		<PlanEditor
+			key={data.plan.id}
+			plan={data.plan}
+			folderName={data.folderName}
+		/>
+	);
 }

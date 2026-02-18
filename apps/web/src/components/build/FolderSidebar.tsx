@@ -12,7 +12,9 @@ import {
 	Copy,
 	FolderOpen,
 	Folder as FolderIcon,
+	Download,
 } from 'lucide-react';
+import { exportFolderPlans } from '@/lib/exportPlan';
 import {
 	DropdownMenu,
 	DropdownMenuTrigger,
@@ -231,6 +233,7 @@ function FolderRow({
 	onNewPlan,
 	onNewSubfolder,
 	onDelete,
+	onExportAll,
 }: {
 	folder: Folder;
 	planCount: number;
@@ -246,6 +249,7 @@ function FolderRow({
 	onNewPlan: () => void;
 	onNewSubfolder: () => void;
 	onDelete: () => void;
+	onExportAll: (() => void) | null;
 }) {
 	const inputRef = useRef<HTMLInputElement>(null);
 
@@ -324,6 +328,12 @@ function FolderRow({
 							<FolderPlus size={12} className="mr-2" />
 							New subfolder
 						</DropdownMenuItem>
+						{onExportAll && (
+							<DropdownMenuItem onSelect={onExportAll}>
+								<Download size={12} className="mr-2" />
+								Export all plans
+							</DropdownMenuItem>
+						)}
 						<DropdownMenuSeparator />
 						<DropdownMenuItem
 							onSelect={onDelete}
@@ -476,6 +486,18 @@ export default function FolderSidebar() {
 		}
 	}
 
+	// ── Folder export ───────────────────────────────────────────────────────────
+
+	function exportFolder(node: FolderNode) {
+		console.log(
+			'[FolderSidebar] Exporting folder:',
+			node.folder.id,
+			'plans:',
+			node.plans.length
+		);
+		exportFolderPlans(node.plans, node.folder.name);
+	}
+
 	// ── Plan operations ─────────────────────────────────────────────────────────
 
 	function startRenamePlan(plan: Plan) {
@@ -602,6 +624,9 @@ export default function FolderSidebar() {
 					onNewPlan={() => createPlan(node.folder.id)}
 					onNewSubfolder={() => createFolder(node.folder.id)}
 					onDelete={() => deleteTree(node)}
+					onExportAll={
+						node.plans.length > 0 ? () => exportFolder(node) : null
+					}
 				/>
 				{isExpanded(node.folder.id) && (
 					<>
