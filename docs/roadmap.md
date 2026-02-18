@@ -241,7 +241,7 @@ Left panel of the Run surface.
 - "Launch Run" button (disabled if validation fails); disables while a run is in progress
 - Validation: plan must have at least one input; at least one model selected
 
-### T11 — LLM Adapter
+### T11 — LLM Adapter ✅
 
 Pluggable adapter layer. Build a mock first; real adapters follow (D5).
 
