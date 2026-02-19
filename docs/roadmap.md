@@ -509,3 +509,4 @@ From `docs/goal.md` future considerations — not planned here but worth keeping
 - **Export** — CSV/JSON download of Reports
 - **Multi-admin evaluation** — inter-rater agreement metrics
 - **Notation-specific parse helpers** — ABC syntax validation, MusicXML schema check
+- **Rubric Rating** — a plan gets a rubric with scores for different aspects, and a human rates the output against the rubric

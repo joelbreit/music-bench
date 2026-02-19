@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate } from '@tanstack/react-router';
+import { Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { db } from '@/db';
 import { useUIStore } from '@/store';
@@ -70,10 +71,18 @@ interface RunRowProps {
 	planName: string;
 	trialCount: number;
 	progress: { completed: number; total: number } | null;
+	onStop: () => void;
 	onClick: () => void;
 }
 
-function RunRow({ run, planName, trialCount, progress, onClick }: RunRowProps) {
+function RunRow({
+	run,
+	planName,
+	trialCount,
+	progress,
+	onStop,
+	onClick,
+}: RunRowProps) {
 	const elapsed = formatElapsed(run.startedAt, run.completedAt);
 	const startedAgo = formatRelativeTime(run.startedAt);
 	const modelCount = run.modelIds.length;
@@ -83,17 +92,34 @@ function RunRow({ run, planName, trialCount, progress, onClick }: RunRowProps) {
 			: 0;
 
 	return (
-		<button
-			type="button"
+		<div
+			role="button"
+			tabIndex={0}
 			onClick={onClick}
-			className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+			onKeyDown={(e) => e.key === 'Enter' && onClick()}
+			className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
 		>
-			{/* Line 1: plan name + status badge */}
+			{/* Line 1: plan name + status badge + stop button */}
 			<div className="flex items-center justify-between gap-2 mb-1">
 				<span className="text-sm font-medium text-foreground truncate">
 					{planName}
 				</span>
-				<StatusBadge status={run.status} />
+				<div className="flex items-center gap-1.5 shrink-0">
+					<StatusBadge status={run.status} />
+					{run.status === 'running' && (
+						<button
+							type="button"
+							onClick={(e) => {
+								e.stopPropagation();
+								onStop();
+							}}
+							title="Stop run"
+							className="flex items-center justify-center w-5 h-5 rounded border border-error/40 bg-error/10 text-error hover:bg-error/20 transition-colors duration-150"
+						>
+							<Square size={9} />
+						</button>
+					)}
+				</div>
 			</div>
 
 			{/* Line 2: metadata */}
@@ -126,7 +152,7 @@ function RunRow({ run, planName, trialCount, progress, onClick }: RunRowProps) {
 					/>
 				</div>
 			)}
-		</button>
+		</div>
 	);
 }
 
@@ -134,7 +160,7 @@ function RunRow({ run, planName, trialCount, progress, onClick }: RunRowProps) {
 
 export default function RunHistoryPanel() {
 	const navigate = useNavigate();
-	const { activeRunId, runProgress } = useUIStore();
+	const { runProgressMap, requestCancel } = useUIStore();
 
 	const runs =
 		useLiveQuery(() => db.runs.orderBy('startedAt').reverse().toArray()) ??
@@ -181,10 +207,9 @@ export default function RunHistoryPanel() {
 								planMap.get(run.planId)?.name ?? 'Unknown plan'
 							}
 							trialCount={trialCountByRun.get(run.id) ?? 0}
-							progress={
-								run.id === activeRunId ? runProgress : null
-							}
-							onClick={() => handleRunClick(run.id)}
+							progress={runProgressMap.get(run.id) ?? null}
+							onStop={() => requestCancel(run.id)}
+							onClick={() => void handleRunClick(run.id)}
 						/>
 					))}
 				</div>

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Play, Square } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { db } from '@/db';
 import { useUIStore } from '@/store';
+import { executeRun } from '@/lib/runExecutor';
 import type { Plan, Provider } from '@/types';
 
 // ─── Provider badge ────────────────────────────────────────────────────────────
@@ -49,8 +50,6 @@ export default function RunConfigPanel() {
 		new Set()
 	);
 
-	const { activeRunId, runProgress, requestCancel } = useUIStore();
-
 	const folders = useLiveQuery(() => db.folders.toArray()) ?? [];
 	const plans = useLiveQuery(() => db.plans.toArray()) ?? [];
 	const allModels = useLiveQuery(() => db.models.toArray()) ?? [];
@@ -63,8 +62,7 @@ export default function RunConfigPanel() {
 	const hasPlan = selectedPlan !== null;
 	const planHasInputs = hasPlan && selectedPlan.inputs.length > 0;
 	const hasModels = selectedModelIds.size > 0;
-	const isRunning = activeRunId !== null;
-	const canLaunch = hasPlan && planHasInputs && hasModels && !isRunning;
+	const canLaunch = hasPlan && planHasInputs && hasModels;
 
 	// Group plans by folder for <optgroup>
 	const folderMap = new Map(folders.map((f) => [f.id, f]));
@@ -117,17 +115,23 @@ export default function RunConfigPanel() {
 			startedAt: new Date(),
 			completedAt: null,
 		});
-		useUIStore.getState().setActiveRun(runId);
+		useUIStore.getState().addActiveRun(runId);
+		executeRun(
+			runId,
+			(completed, total) =>
+				useUIStore
+					.getState()
+					.setRunProgress(runId, { completed, total }),
+			() => useUIStore.getState().cancelRequestedIds.has(runId)
+		)
+			.catch((err: unknown) =>
+				console.error('[RunConfigPanel] Run error:', err)
+			)
+			.finally(() => {
+				console.log('[RunConfigPanel] Run finished:', runId);
+				useUIStore.getState().removeActiveRun(runId);
+			});
 	}
-
-	function handleStop() {
-		console.log('[RunConfigPanel] Stop requested');
-		requestCancel();
-	}
-
-	const progressPct = runProgress
-		? Math.round((runProgress.completed / runProgress.total) * 100)
-		: 0;
 
 	return (
 		<div className="flex flex-col h-full p-5 gap-6 overflow-y-auto">
@@ -146,7 +150,6 @@ export default function RunConfigPanel() {
 						setSelectedPlanId(e.target.value);
 					}}
 					className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
-					disabled={isRunning}
 				>
 					<option value="">Select a plan…</option>
 					{[...plansByFolder.entries()].map(
@@ -198,8 +201,7 @@ export default function RunConfigPanel() {
 						<button
 							type="button"
 							onClick={toggleAll}
-							disabled={isRunning}
-							className="text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-default transition-colors duration-150"
+							className="text-[11px] text-muted-foreground hover:text-foreground transition-colors duration-150"
 						>
 							{allSelected ? 'Deselect all' : 'Select all'}
 						</button>
@@ -215,20 +217,12 @@ export default function RunConfigPanel() {
 						{models.map((model) => (
 							<label
 								key={model.id}
-								className={cn(
-									'flex items-center gap-2.5 py-1.5 px-2 rounded-md cursor-pointer',
-									isRunning
-										? 'opacity-50 cursor-default'
-										: 'hover:bg-muted'
-								)}
+								className="flex items-center gap-2.5 py-1.5 px-2 rounded-md cursor-pointer hover:bg-muted"
 							>
 								<input
 									type="checkbox"
 									checked={selectedModelIds.has(model.id)}
-									onChange={() =>
-										!isRunning && toggleModel(model.id)
-									}
-									disabled={isRunning}
+									onChange={() => toggleModel(model.id)}
 									className="shrink-0 accent-primary"
 								/>
 								<span className="flex-1 min-w-0 text-sm font-mono text-foreground truncate">
@@ -241,48 +235,19 @@ export default function RunConfigPanel() {
 				)}
 			</div>
 
-			{/* ── Launch / Stop ── */}
+			{/* ── Launch ── */}
 			<div className="space-y-3 mt-auto">
-				{isRunning && runProgress && (
-					<div className="space-y-1.5">
-						<div className="flex justify-between text-[11px] text-muted-foreground">
-							<span>Running…</span>
-							<span>
-								{runProgress.completed} / {runProgress.total}{' '}
-								trials
-							</span>
-						</div>
-						<div className="h-1 bg-muted rounded-full overflow-hidden">
-							<div
-								className="h-full bg-primary rounded-full transition-all duration-300 ease-out"
-								style={{ width: `${progressPct}%` }}
-							/>
-						</div>
-					</div>
-				)}
+				<button
+					type="button"
+					onClick={() => void handleLaunch()}
+					disabled={!canLaunch}
+					className="flex items-center gap-1.5 w-full justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-default px-4 py-2 text-sm font-medium transition-colors duration-150"
+				>
+					<Play size={13} />
+					Launch Run
+				</button>
 
-				{isRunning ? (
-					<button
-						type="button"
-						onClick={handleStop}
-						className="flex items-center gap-1.5 w-full justify-center rounded-md border border-error/30 bg-error/10 text-error hover:bg-error/20 px-4 py-2 text-sm font-medium transition-colors duration-150"
-					>
-						<Square size={13} />
-						Stop Run
-					</button>
-				) : (
-					<button
-						type="button"
-						onClick={handleLaunch}
-						disabled={!canLaunch}
-						className="flex items-center gap-1.5 w-full justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-default px-4 py-2 text-sm font-medium transition-colors duration-150"
-					>
-						<Play size={13} />
-						Launch Run
-					</button>
-				)}
-
-				{!isRunning && !hasModels && models.length > 0 && (
+				{!hasModels && models.length > 0 && (
 					<p className="text-[11px] text-muted-foreground text-center">
 						Select at least one model to continue
 					</p>

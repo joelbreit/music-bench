@@ -18,16 +18,18 @@ interface UIStore {
 	setSelectedFolder: (id: string | null) => void;
 
 	// ── Run surface ────────────────────────────────────────────────────────
-	// The run that is currently executing (real-time progress updates)
-	activeRunId: string | null;
-	runProgress: { completed: number; total: number } | null;
-	cancelRequested: boolean;
-	setActiveRun: (id: string | null) => void;
+	// Tracks all concurrently executing runs. Each run manages its own
+	// progress slot and cancel flag — no global single-run assumption.
+	activeRunIds: Set<string>;
+	runProgressMap: Map<string, { completed: number; total: number }>;
+	cancelRequestedIds: Set<string>;
+	addActiveRun: (id: string) => void;
+	removeActiveRun: (id: string) => void;
 	setRunProgress: (
-		progress: { completed: number; total: number } | null
+		runId: string,
+		progress: { completed: number; total: number }
 	) => void;
-	requestCancel: () => void;
-	clearCancel: () => void;
+	requestCancel: (runId: string) => void;
 
 	// ── Evaluate surface ───────────────────────────────────────────────────
 	// Current position in the evaluation workflow
@@ -79,23 +81,50 @@ export const useUIStore = create<UIStore>()(
 			},
 
 			// Run
-			activeRunId: null,
-			runProgress: null,
-			cancelRequested: false,
-			setActiveRun: (id) => {
-				console.log('[store] Active run:', id);
-				set({
-					activeRunId: id,
-					runProgress: null,
-					cancelRequested: false,
+			activeRunIds: new Set<string>(),
+			runProgressMap: new Map<
+				string,
+				{ completed: number; total: number }
+			>(),
+			cancelRequestedIds: new Set<string>(),
+			addActiveRun: (id) => {
+				console.log('[store] Adding active run:', id);
+				set((s) => ({
+					activeRunIds: new Set(s.activeRunIds).add(id),
+				}));
+			},
+			removeActiveRun: (id) => {
+				console.log('[store] Removing active run:', id);
+				set((s) => {
+					const nextIds = new Set(s.activeRunIds);
+					nextIds.delete(id);
+					const nextProgress = new Map(s.runProgressMap);
+					nextProgress.delete(id);
+					const nextCancel = new Set(s.cancelRequestedIds);
+					nextCancel.delete(id);
+					return {
+						activeRunIds: nextIds,
+						runProgressMap: nextProgress,
+						cancelRequestedIds: nextCancel,
+					};
 				});
 			},
-			setRunProgress: (progress) => set({ runProgress: progress }),
-			requestCancel: () => {
-				console.log('[store] Cancel requested');
-				set({ cancelRequested: true });
+			setRunProgress: (runId, progress) => {
+				set((s) => ({
+					runProgressMap: new Map(s.runProgressMap).set(
+						runId,
+						progress
+					),
+				}));
 			},
-			clearCancel: () => set({ cancelRequested: false }),
+			requestCancel: (runId) => {
+				console.log('[store] Cancel requested for run:', runId);
+				set((s) => ({
+					cancelRequestedIds: new Set(s.cancelRequestedIds).add(
+						runId
+					),
+				}));
+			},
 
 			// Evaluate
 			evalRunId: null,
