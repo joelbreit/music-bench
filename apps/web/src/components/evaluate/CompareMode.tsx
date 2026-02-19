@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate } from '@tanstack/react-router';
-import { ArrowDown, ArrowUp, ChevronRight, Eye } from 'lucide-react';
+import {
+	ArrowDown,
+	ArrowUp,
+	Check,
+	ChevronRight,
+	Copy,
+	Eye,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { db } from '@/db';
 import MusicRenderer from '@/components/music/MusicRenderer';
@@ -59,6 +66,18 @@ function ModelColumn({
 	revealed: boolean;
 }) {
 	const [rawExpanded, setRawExpanded] = useState(false);
+	const [copiedAbc, setCopiedAbc] = useState(false);
+	const abcMatch = /```abc\n([\s\S]*?)```/.exec(trial?.output ?? '');
+	const abcContent = abcMatch ? abcMatch[1] : null;
+
+	function handleCopyAbc() {
+		if (!abcContent) return;
+		console.log('[CompareMode] Copying ABC content for trial:', trial?.id);
+		void navigator.clipboard.writeText(abcContent).then(() => {
+			setCopiedAbc(true);
+			setTimeout(() => setCopiedAbc(false), 1500);
+		});
+	}
 
 	return (
 		<div className="w-72 min-w-[272px] flex flex-col gap-3">
@@ -79,21 +98,38 @@ function ModelColumn({
 			)}
 
 			<div>
-				<button
-					type="button"
-					onClick={() => setRawExpanded((v) => !v)}
-					className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors duration-150"
-				>
-					<span
-						className={cn(
-							'transition-transform duration-150',
-							rawExpanded && 'rotate-90'
-						)}
+				<div className="flex items-center gap-3">
+					<button
+						type="button"
+						onClick={() => setRawExpanded((v) => !v)}
+						className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors duration-150"
 					>
-						▶
-					</span>
-					Raw output
-				</button>
+						<span
+							className={cn(
+								'transition-transform duration-150',
+								rawExpanded && 'rotate-90'
+							)}
+						>
+							▶
+						</span>
+						Raw output
+					</button>
+					{abcContent !== null && (
+						<button
+							type="button"
+							onClick={handleCopyAbc}
+							title="Copy ABC notation"
+							className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors duration-150"
+						>
+							{copiedAbc ? (
+								<Check size={11} className="text-success" />
+							) : (
+								<Copy size={11} />
+							)}
+							{copiedAbc ? 'Copied' : 'Copy ABC'}
+						</button>
+					)}
+				</div>
 				{rawExpanded && (
 					<pre className="mt-2 p-3 bg-muted rounded-md text-xs font-mono text-foreground overflow-auto max-h-48 whitespace-pre-wrap break-all">
 						{trial?.output ?? '(no output)'}

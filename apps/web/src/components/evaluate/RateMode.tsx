@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate } from '@tanstack/react-router';
-import { ChevronLeft, ChevronRight, Eye, SkipForward } from 'lucide-react';
+import {
+	Check,
+	ChevronLeft,
+	ChevronRight,
+	Copy,
+	Eye,
+	SkipForward,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { db } from '@/db';
 import MusicRenderer from '@/components/music/MusicRenderer';
@@ -100,6 +107,7 @@ export default function RateMode({ run }: Props) {
 	const navigate = useNavigate();
 	const [trialIdx, setTrialIdx] = useState(0);
 	const [rawExpanded, setRawExpanded] = useState(false);
+	const [copiedAbc, setCopiedAbc] = useState(false);
 
 	// Stable random seed — fixed at mount, survives re-renders from useLiveQuery.
 	// Component is keyed by runId, so a new run gets a fresh shuffle.
@@ -163,6 +171,17 @@ export default function RateMode({ run }: Props) {
 	const idx = Math.min(trialIdx, trials.length - 1);
 	const trial = trials[idx];
 	const model = modelMap.get(trial.modelId);
+	const abcMatch = /```abc\n([\s\S]*?)```/.exec(trial.output ?? '');
+	const abcContent = abcMatch ? abcMatch[1] : null;
+
+	function handleCopyAbc() {
+		if (!abcContent) return;
+		console.log('[RateMode] Copying ABC content for trial:', trial.id);
+		void navigator.clipboard.writeText(abcContent).then(() => {
+			setCopiedAbc(true);
+			setTimeout(() => setCopiedAbc(false), 1500);
+		});
+	}
 	const currentRating = ratingMap.get(trial.id) ?? null;
 	const total = trials.length;
 	const ratedCount = ratingMap.size;
@@ -250,27 +269,44 @@ export default function RateMode({ run }: Props) {
 
 				{/* Raw output collapsible */}
 				<div>
-					<button
-						type="button"
-						onClick={() => {
-							console.log(
-								'[RateMode] Toggle raw output:',
-								!rawExpanded
-							);
-							setRawExpanded((v) => !v);
-						}}
-						className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors duration-150"
-					>
-						<span
-							className={cn(
-								'transition-transform duration-150',
-								rawExpanded && 'rotate-90'
-							)}
+					<div className="flex items-center gap-3">
+						<button
+							type="button"
+							onClick={() => {
+								console.log(
+									'[RateMode] Toggle raw output:',
+									!rawExpanded
+								);
+								setRawExpanded((v) => !v);
+							}}
+							className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors duration-150"
 						>
-							▶
-						</span>
-						Raw output
-					</button>
+							<span
+								className={cn(
+									'transition-transform duration-150',
+									rawExpanded && 'rotate-90'
+								)}
+							>
+								▶
+							</span>
+							Raw output
+						</button>
+						{abcContent !== null && (
+							<button
+								type="button"
+								onClick={handleCopyAbc}
+								title="Copy ABC notation"
+								className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors duration-150"
+							>
+								{copiedAbc ? (
+									<Check size={11} className="text-success" />
+								) : (
+									<Copy size={11} />
+								)}
+								{copiedAbc ? 'Copied' : 'Copy ABC'}
+							</button>
+						)}
+					</div>
 					{rawExpanded && (
 						<pre className="mt-2 p-3 bg-muted rounded-md text-xs font-mono text-foreground overflow-auto max-h-64 whitespace-pre-wrap break-all">
 							{trial.output ?? '(no output)'}
