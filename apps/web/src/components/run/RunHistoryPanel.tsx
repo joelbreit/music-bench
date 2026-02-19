@@ -1,9 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate } from '@tanstack/react-router';
-import { Square } from 'lucide-react';
+import { RotateCcw, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { db } from '@/db';
 import { useUIStore } from '@/store';
+import { executeRun } from '@/lib/runExecutor';
 import type { Run, RunStatus } from '@/types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -72,6 +73,7 @@ interface RunRowProps {
 	trialCount: number;
 	progress: { completed: number; total: number } | null;
 	onStop: () => void;
+	onRestart: () => void;
 	onClick: () => void;
 }
 
@@ -81,6 +83,7 @@ function RunRow({
 	trialCount,
 	progress,
 	onStop,
+	onRestart,
 	onClick,
 }: RunRowProps) {
 	const elapsed = formatElapsed(run.startedAt, run.completedAt);
@@ -117,6 +120,20 @@ function RunRow({
 							className="flex items-center justify-center w-5 h-5 rounded border border-error/40 bg-error/10 text-error hover:bg-error/20 transition-colors duration-150"
 						>
 							<Square size={9} />
+						</button>
+					)}
+					{(run.status === 'cancelled' ||
+						run.status === 'failed') && (
+						<button
+							type="button"
+							onClick={(e) => {
+								e.stopPropagation();
+								onRestart();
+							}}
+							title="Restart run from where it left off"
+							className="flex items-center justify-center w-5 h-5 rounded border border-border bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-150"
+						>
+							<RotateCcw size={9} />
 						</button>
 					)}
 				</div>
@@ -185,6 +202,33 @@ export default function RunHistoryPanel() {
 		await navigate({ to: '/explore/$runId', params: { runId } });
 	}
 
+	function handleRestart(runId: string) {
+		console.log('[RunHistoryPanel] Restarting run:', runId);
+		void db.runs
+			.update(runId, { status: 'queued', completedAt: null })
+			.then(() => {
+				useUIStore.getState().addActiveRun(runId);
+				executeRun(
+					runId,
+					(completed, total) =>
+						useUIStore
+							.getState()
+							.setRunProgress(runId, { completed, total }),
+					() => useUIStore.getState().cancelRequestedIds.has(runId)
+				)
+					.catch((err: unknown) =>
+						console.error('[RunHistoryPanel] Restart error:', err)
+					)
+					.finally(() => {
+						console.log(
+							'[RunHistoryPanel] Restarted run finished:',
+							runId
+						);
+						useUIStore.getState().removeActiveRun(runId);
+					});
+			});
+	}
+
 	return (
 		<div className="flex flex-col h-full overflow-hidden">
 			<div className="px-4 py-3 border-b border-border shrink-0">
@@ -209,6 +253,7 @@ export default function RunHistoryPanel() {
 							trialCount={trialCountByRun.get(run.id) ?? 0}
 							progress={runProgressMap.get(run.id) ?? null}
 							onStop={() => requestCancel(run.id)}
+							onRestart={() => handleRestart(run.id)}
 							onClick={() => void handleRunClick(run.id)}
 						/>
 					))}

@@ -42,6 +42,31 @@ class MusicBenchDB extends Dexie {
 
 export const db = new MusicBenchDB();
 
+// ─── Orphan cleanup ───────────────────────────────────────────────────────────
+// Runs left in 'running' or 'queued' state mean the page was closed or
+// refreshed mid-execution. Mark them cancelled so the UI doesn't show stale
+// progress bars and the user knows to re-launch them.
+
+export async function resetOrphanedRuns(): Promise<void> {
+	const orphans = await db.runs
+		.where('status')
+		.anyOf('running', 'queued')
+		.toArray();
+	if (orphans.length === 0) return;
+	console.log(
+		'[db] Resetting',
+		orphans.length,
+		'orphaned run(s):',
+		orphans.map((r) => r.id)
+	);
+	const now = new Date();
+	await Promise.all(
+		orphans.map((r) =>
+			db.runs.update(r.id, { status: 'cancelled', completedAt: now })
+		)
+	);
+}
+
 // ─── Seed ─────────────────────────────────────────────────────────────────────
 
 export async function seedIfEmpty(): Promise<void> {

@@ -1,7 +1,12 @@
-// T12 — Run Execution Engine
+// Run Execution Engine
 //
 // Drives a single Run from 'queued' to 'complete' (or 'cancelled'/'failed').
 // Trials run sequentially, one at a time, in model × input order.
+//
+// Resume support: if trials already exist for the run (e.g. after a
+// cancellation), completed trials are skipped and execution picks up from
+// where it left off. Any trials stuck in 'running' are reset to 'pending'
+// before resuming.
 //
 // isCancelled() is polled before each trial; returning true stops execution
 // and marks the run as 'cancelled'.
@@ -43,36 +48,76 @@ export async function executeRun(
 
 	await db.runs.update(runId, { status: 'running' });
 
-	// Create one trial per model × input
-	const trialDefs: Trial[] = [];
-	for (const model of models) {
-		for (let i = 0; i < plan.inputs.length; i++) {
-			trialDefs.push({
-				id: crypto.randomUUID(),
-				runId,
-				modelId: model.id,
-				input: plan.inputs[i],
-				inputIndex: i,
-				output: null,
-				latencyMs: null,
-				tokens: null,
-				status: 'pending',
-			});
+	// ── Trial setup: fresh or resume ──────────────────────────────────────────
+	const existingTrials = await db.trials
+		.where('runId')
+		.equals(runId)
+		.toArray();
+
+	let trialsToExecute: Trial[];
+	let total: number;
+	let completed: number;
+
+	if (existingTrials.length > 0) {
+		// Resume: reset any 'running' trials (interrupted mid-execution) to 'pending'
+		const interrupted = existingTrials.filter(
+			(t) => t.status === 'running'
+		);
+		if (interrupted.length > 0) {
+			await Promise.all(
+				interrupted.map((t) =>
+					db.trials.update(t.id, { status: 'pending' })
+				)
+			);
 		}
+		total = existingTrials.length;
+		completed = existingTrials.filter(
+			(t) => t.status === 'complete'
+		).length;
+		trialsToExecute = existingTrials
+			.filter((t) => t.status !== 'complete')
+			.map((t) => ({ ...t, status: 'pending' as const }));
+		console.log(
+			'[runExecutor] Resuming run',
+			runId,
+			'— skipping',
+			completed,
+			'complete trials, executing',
+			trialsToExecute.length
+		);
+	} else {
+		// Fresh run: create one trial per model × input
+		const trialDefs: Trial[] = [];
+		for (const model of models) {
+			for (let i = 0; i < plan.inputs.length; i++) {
+				trialDefs.push({
+					id: crypto.randomUUID(),
+					runId,
+					modelId: model.id,
+					input: plan.inputs[i],
+					inputIndex: i,
+					output: null,
+					latencyMs: null,
+					tokens: null,
+					status: 'pending',
+				});
+			}
+		}
+		await db.trials.bulkAdd(trialDefs);
+		console.log(
+			'[runExecutor] Created',
+			trialDefs.length,
+			'trials for run',
+			runId
+		);
+		total = trialDefs.length;
+		completed = 0;
+		trialsToExecute = trialDefs;
 	}
-	await db.trials.bulkAdd(trialDefs);
-	console.log(
-		'[runExecutor] Created',
-		trialDefs.length,
-		'trials for run',
-		runId
-	);
 
-	const total = trialDefs.length;
-	let completed = 0;
-	onProgress(0, total);
+	onProgress(completed, total);
 
-	for (const trial of trialDefs) {
+	for (const trial of trialsToExecute) {
 		if (isCancelled()) {
 			console.log(
 				'[runExecutor] Cancellation requested — stopping run',
@@ -119,7 +164,7 @@ export async function executeRun(
 				result.tokens
 			);
 
-			// T13: run parse assertion inline for Parse-strategy plans
+			// Run parse assertion inline for Parse-strategy plans
 			if (plan.evalStrategy === 'parse' && plan.parseCode) {
 				const verdict = runParseAssertion(
 					trial.id,
