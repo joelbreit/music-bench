@@ -1,7 +1,13 @@
+import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
+import { Download, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { db } from '@/db';
+import { exportAllRunResults } from '@/lib/exportResults';
+import { importRunResults } from '@/lib/importResults';
+import ImportResultsDialog from '@/components/explore/ImportResultsDialog';
+import type { RunExportData } from '@/lib/importResults';
 import type { EvalStrategy, Plan, Run } from '@/types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -93,6 +99,8 @@ function RunRow({ item, isActive, onClick }: RowProps) {
 
 export default function RunSelectorPanel() {
 	const navigate = useNavigate();
+	const [importOpen, setImportOpen] = useState(false);
+	const [exporting, setExporting] = useState(false);
 
 	const pathname = useRouterState({
 		select: (s) => s.location.pathname,
@@ -154,12 +162,53 @@ export default function RunSelectorPanel() {
 		await navigate({ to: '/explore/$runId', params: { runId } });
 	}
 
+	async function handleExportAll() {
+		if (!items || items.length === 0) return;
+		console.log('[RunSelectorPanel] Exporting all runs:', items.length);
+		setExporting(true);
+		try {
+			await exportAllRunResults(items.map((i) => i.run.id));
+		} finally {
+			setExporting(false);
+		}
+	}
+
+	async function handleImport(data: RunExportData) {
+		console.log('[RunSelectorPanel] Importing run results');
+		const newRunId = await importRunResults(data);
+		await navigate({ to: '/explore/$runId', params: { runId: newRunId } });
+	}
+
 	return (
 		<div className="flex flex-col h-full overflow-hidden">
-			<div className="px-4 py-3 border-b border-border shrink-0">
+			<div className="px-4 py-3 border-b border-border shrink-0 flex items-center justify-between">
 				<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
 					Runs
 				</p>
+				<div className="flex items-center gap-1">
+					<button
+						type="button"
+						onClick={handleExportAll}
+						disabled={!items || items.length === 0 || exporting}
+						className="flex items-center justify-center h-5 w-5 rounded text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-default transition-colors duration-150"
+						aria-label="Export all results"
+					>
+						<Download size={12} />
+					</button>
+					<button
+						type="button"
+						onClick={() => {
+							console.log(
+								'[RunSelectorPanel] Opening import dialog'
+							);
+							setImportOpen(true);
+						}}
+						className="flex items-center justify-center h-5 w-5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-150"
+						aria-label="Import results"
+					>
+						<Upload size={12} />
+					</button>
+				</div>
 			</div>
 
 			{!items || items.length === 0 ? (
@@ -178,6 +227,12 @@ export default function RunSelectorPanel() {
 					))}
 				</div>
 			)}
+
+			<ImportResultsDialog
+				open={importOpen}
+				onOpenChange={setImportOpen}
+				onConfirm={handleImport}
+			/>
 		</div>
 	);
 }

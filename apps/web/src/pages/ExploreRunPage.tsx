@@ -1,14 +1,28 @@
+import { useState } from 'react';
 import { useParams } from '@tanstack/react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { Download } from 'lucide-react';
 import { db } from '@/db';
 import { computeReport } from '@/lib/computeReport';
+import { exportRunResults } from '@/lib/exportResults';
 import Leaderboard from '@/components/explore/Leaderboard';
 import TrialTable from '@/components/explore/TrialTable';
 import type { Ranking, Rating, Verdict } from '@/types';
 
 export default function ExploreRunPage() {
 	const { runId } = useParams({ from: '/explore/$runId' });
+	const [exporting, setExporting] = useState(false);
 	console.log('[ExploreRunPage] runId:', runId);
+
+	async function handleExport() {
+		console.log('[ExploreRunPage] Exporting run results:', runId);
+		setExporting(true);
+		try {
+			await exportRunResults(runId);
+		} finally {
+			setExporting(false);
+		}
+	}
 
 	const data = useLiveQuery(async () => {
 		const run = await db.runs.get(runId);
@@ -94,6 +108,17 @@ export default function ExploreRunPage() {
 		<div className="flex-1 overflow-hidden flex flex-col">
 			{/* Leaderboard — upper section */}
 			<div className="shrink-0 border-b border-border">
+				<div className="flex justify-end px-5 pt-3 pb-0">
+					<button
+						type="button"
+						onClick={handleExport}
+						disabled={exporting}
+						className="inline-flex items-center px-2.5 py-1 text-xs rounded-md border border-border bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-default transition-colors duration-150"
+					>
+						<Download className="w-3.5 h-3.5 mr-1.5" />
+						{exporting ? 'Exporting…' : 'Export Results'}
+					</button>
+				</div>
 				<Leaderboard
 					runId={runId}
 					evalStrategy={plan.evalStrategy}
