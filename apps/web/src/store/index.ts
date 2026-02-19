@@ -41,6 +41,12 @@ interface UIStore {
 	// ── Explore surface ────────────────────────────────────────────────────
 	exploreRunId: string | null;
 	setExploreRunId: (id: string | null) => void;
+
+	// ── Understand surface ─────────────────────────────────────────────────
+	understandPlanIds: string[];
+	toggleUnderstandPlan: (planId: string) => void;
+	setUnderstandPlans: (planIds: string[]) => void;
+	clearUnderstandPlans: () => void;
 }
 
 export const useUIStore = create<UIStore>()(
@@ -107,6 +113,28 @@ export const useUIStore = create<UIStore>()(
 			setExploreRunId: (id) => {
 				console.log('[store] Explore run:', id);
 				set({ exploreRunId: id });
+			},
+
+			// Understand
+			understandPlanIds: [],
+			toggleUnderstandPlan: (planId) => {
+				console.log('[store] Toggle understand plan:', planId);
+				set((s) => {
+					const has = s.understandPlanIds.includes(planId);
+					return {
+						understandPlanIds: has
+							? s.understandPlanIds.filter((id) => id !== planId)
+							: [...s.understandPlanIds, planId],
+					};
+				});
+			},
+			setUnderstandPlans: (planIds) => {
+				console.log('[store] Set understand plans:', planIds.length);
+				set({ understandPlanIds: planIds });
+			},
+			clearUnderstandPlans: () => {
+				console.log('[store] Clear understand plans');
+				set({ understandPlanIds: [] });
 			},
 		}),
 		{

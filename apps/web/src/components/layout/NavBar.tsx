@@ -10,6 +10,7 @@ const NAV_ITEMS = [
 	{ to: '/run', label: 'Run' },
 	{ to: '/evaluate', label: 'Evaluate' },
 	{ to: '/explore', label: 'Explore' },
+	{ to: '/understand', label: 'Understand' },
 ] as const;
 
 function NavLink({ to, label }: { to: string; label: string }) {

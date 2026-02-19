@@ -71,6 +71,7 @@ graph TD
     D5 --> T11
     T11 --> T12
     P2 --> P6[Phase 6: Import/Export]
+    P5 --> P7[Phase 7: Understand]
 
     subgraph P1
         T1[T1 Theme ✅]
@@ -113,6 +114,13 @@ graph TD
         T23[T23 Plan Format Guide ✅]
         T24[T24 Plan Export ✅]
         T25[T25 Plan Import ✅]
+    end
+
+    subgraph P7
+        T27[T27 Cross-Assessment Aggregator]
+        T28[T28 Assessment Filter Panel]
+        T29[T29 Global Model Leaderboard]
+        T30[T30 Model × Plan Matrix]
     end
 ```
 
@@ -422,6 +430,75 @@ Add an import flow to the Build surface.
 
 ---
 
+## Phase 7 — Understand Surface
+
+Cross-assessment view: aggregates model performance across all plans and runs rather than within a single run. Where Explore is a deep-dive into one run, Understand answers the question "which model is best overall, and at what kinds of tasks?".
+
+Two-panel layout: filter/selector left, aggregated results right.
+
+### T27 — Cross-Assessment Aggregator
+
+Pure function (no UI): collects all scored runs and computes normalized, per-model scores rolled up across plans.
+
+- `src/lib/computeAggregateReport.ts` — `computeAggregateReport(planIds: string[]): AggregateReport`
+- Queries all complete runs whose plan is in `planIds`; for each run calls `computeReport` (T20) to get per-model normalized scores
+- Produces an `AggregateReport`:
+  ```
+  AggregateReport {
+    modelRows: {
+      modelId: string;
+      modelName: string;
+      provider: string;
+      overallScore: number | null;   // mean of all per-run scores for this model
+      planScores: {
+        planId: string;
+        planName: string;
+        score: number | null;        // best run score if multiple runs exist
+        runCount: number;
+      }[];
+    }[];
+    planSummaries: { planId, planName, evalStrategy, runCount }[];
+  }
+  ```
+- When a model has been run against a plan more than once, use the most recent scored run
+- Models with no scored runs for a given plan get `null` (not included in the overall mean)
+- Overall score is the unweighted mean of all non-null plan scores for that model
+- Add the `AggregateReport` type to `src/types/`
+
+### T28 — Assessment Filter Panel
+
+Narrow left panel of the Understand surface. Lets the user choose which plans to include in the aggregation.
+
+- `src/components/understand/AssessmentFilterPanel.tsx` — folder tree mirroring the Build sidebar (T5) but with checkboxes instead of navigation
+- Each plan entry shows: name, eval strategy badge, run count (only runs with judgments count)
+- Plans with no scored runs are shown greyed out and non-selectable
+- "Select All" / "Clear" shortcuts at the top
+- Selection persisted in Zustand `understandSlice` (ephemeral — resets on reload is acceptable)
+- Panel width ~240px; scrollable if plan list is long
+
+### T29 — Global Model Leaderboard
+
+Upper portion of the right panel. Ranks all models that appear in at least one selected run.
+
+- `src/components/understand/GlobalLeaderboard.tsx` — horizontal bar chart, one row per model sorted by overall score descending; same visual style as the per-run Leaderboard (T21)
+- Bars use provider model colors; score label shows the numeric value (e.g. `0.74`) and the number of plans contributing (e.g. `3 plans`)
+- Models with only partial coverage (some plans missing) shown with a dashed bar border and a `partial` label
+- Score transitions on mount via `setTimeout` + CSS `transition: width 500ms ease` (same pattern as T21)
+- Empty state when no plans are selected or no runs have judgments
+
+### T30 — Model × Plan Score Matrix
+
+Lower portion of the right panel. A grid with models as rows and selected plans as columns, each cell showing the normalized score for that (model, plan) pair.
+
+- `src/components/understand/ScoreMatrix.tsx` — sticky header row (plan names, truncated with tooltip) and sticky first column (model badges)
+- Cell background: color-scaled from `--success` (score = 1.0) through neutral (0.5) to `--error` (0.0); empty/null cells shown as `—` with muted background
+- Each cell also shows the raw score as a small number (two decimal places) and the eval strategy icon (Parse / Rate / Compare) as a subtle indicator
+- Clicking a cell navigates to `/explore/$runId` for the most recent run that produced that score, so the user can drill down into the full Explore view
+- Columns sortable by clicking a plan header (sorts models by that plan's score); default sort is by overall score (matches the leaderboard)
+- Horizontally scrollable when many plans are selected; min column width 80px
+
+---
+
 ## Deferred (Post-MVP)
 
 From `docs/goal.md` future considerations — not planned here but worth keeping in mind when making architectural choices:
@@ -430,6 +507,5 @@ From `docs/goal.md` future considerations — not planned here but worth keeping
 - **Model config variants** — temperature, system prompt as first-class identifiers
 - **Parallel trial execution** — batch API calls with rate limiting
 - **Export** — CSV/JSON download of Reports
-- **Cross-Run comparison** — same Plan across multiple Runs/dates
 - **Multi-admin evaluation** — inter-rater agreement metrics
 - **Notation-specific parse helpers** — ABC syntax validation, MusicXML schema check

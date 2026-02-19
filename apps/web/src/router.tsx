@@ -17,6 +17,7 @@ import NotFoundPage from '@/pages/NotFoundPage';
 import BuildIndexPage from '@/pages/BuildIndexPage';
 import EvaluateIndexPage from '@/pages/EvaluateIndexPage';
 import ExploreIndexPage from '@/pages/ExploreIndexPage';
+import UnderstandPage from '@/pages/UnderstandPage';
 
 // ─── Root layout ──────────────────────────────────────────────────────────────
 
@@ -63,6 +64,12 @@ const exploreRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: '/explore',
 	component: ExplorePage,
+});
+
+const understandRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: '/understand',
+	component: UnderstandPage,
 });
 
 // ─── Build nested routes ───────────────────────────────────────────────────────
@@ -115,6 +122,7 @@ const routeTree = rootRoute.addChildren([
 	runRoute,
 	evaluateRoute.addChildren([evaluateIndexRoute, evaluateRunRoute]),
 	exploreRoute.addChildren([exploreIndexRoute, exploreRunRoute]),
+	understandRoute,
 ]);
 
 export const router = createRouter({

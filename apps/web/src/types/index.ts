@@ -110,6 +110,43 @@ export interface Report {
 	modelScores: ModelScore[];
 }
 
+// ─── Aggregate Report ─────────────────────────────────────────────────────────
+
+export interface PlanScore {
+	planId: string;
+	planName: string;
+	/** Score from the most recent scored run that included this model, or null if none. */
+	score: number | null;
+	/** Number of scored runs for this plan (across all models). */
+	runCount: number;
+	/** Run ID of the most recent scored run that included this model, for drill-through navigation. */
+	runId: string | null;
+}
+
+export interface AggregateModelRow {
+	modelId: string;
+	modelName: string;
+	provider: Provider;
+	/** Unweighted mean of all non-null plan scores for this model. */
+	overallScore: number | null;
+	planScores: PlanScore[];
+}
+
+export interface PlanSummary {
+	planId: string;
+	planName: string;
+	evalStrategy: EvalStrategy;
+	/** Number of complete runs with at least one judgment. */
+	runCount: number;
+}
+
+export interface AggregateReport {
+	/** One row per model, sorted by overallScore descending (nulls last). */
+	modelRows: AggregateModelRow[];
+	/** One entry per plan in the requested planIds order (plans with no data included). */
+	planSummaries: PlanSummary[];
+}
+
 // ─── Pluggable adapter interfaces ─────────────────────────────────────────────
 
 export interface LLMCallResult {
