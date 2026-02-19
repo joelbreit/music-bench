@@ -75,6 +75,19 @@ export default function RunConfigPanel() {
 		plansByFolder.set(plan.folderId, group);
 	}
 
+	const allSelected =
+		models.length > 0 && models.every((m) => selectedModelIds.has(m.id));
+
+	function toggleAll() {
+		if (allSelected) {
+			console.log('[RunConfigPanel] Deselecting all models');
+			setSelectedModelIds(new Set());
+		} else {
+			console.log('[RunConfigPanel] Selecting all models');
+			setSelectedModelIds(new Set(models.map((m) => m.id)));
+		}
+	}
+
 	function toggleModel(modelId: string) {
 		setSelectedModelIds((prev) => {
 			const next = new Set(prev);
@@ -177,9 +190,21 @@ export default function RunConfigPanel() {
 
 			{/* ── Model multi-select ── */}
 			<div className="space-y-2">
-				<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-					Models
-				</p>
+				<div className="flex items-center justify-between">
+					<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+						Models
+					</p>
+					{models.length > 0 && (
+						<button
+							type="button"
+							onClick={toggleAll}
+							disabled={isRunning}
+							className="text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-default transition-colors duration-150"
+						>
+							{allSelected ? 'Deselect all' : 'Select all'}
+						</button>
+					)}
+				</div>
 
 				{models.length === 0 ? (
 					<p className="text-sm text-dim-foreground py-1">
