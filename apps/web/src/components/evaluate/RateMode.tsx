@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate } from '@tanstack/react-router';
-import { ChevronLeft, ChevronRight, SkipForward } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, SkipForward } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { db } from '@/db';
 import MusicRenderer from '@/components/music/MusicRenderer';
-import type { Plan, Provider, Run } from '@/types';
+import type { Plan, Provider, Run, Trial } from '@/types';
 
 // ─── Provider / model badge ───────────────────────────────────────────────────
 
@@ -73,6 +73,22 @@ function StarRating({
 	);
 }
 
+// ─── Seeded Fisher-Yates shuffle ──────────────────────────────────────────────
+// Deterministic: same seed → same order. Used so Prev/Next are stable across
+// re-renders triggered by useLiveQuery (e.g. when a rating is saved).
+
+function seededShuffle<T>(arr: T[], seed: number): T[] {
+	const result = [...arr];
+	// LCG generator seeded from a float in [0, 1)
+	let s = Math.floor(seed * 2147483647);
+	for (let i = result.length - 1; i > 0; i--) {
+		s = (Math.imul(s, 1664525) + 1013904223) | 0;
+		const j = (s >>> 1) % (i + 1);
+		[result[i], result[j]] = [result[j], result[i]];
+	}
+	return result;
+}
+
 // ─── Rate Mode ────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -84,6 +100,20 @@ export default function RateMode({ run }: Props) {
 	const navigate = useNavigate();
 	const [trialIdx, setTrialIdx] = useState(0);
 	const [rawExpanded, setRawExpanded] = useState(false);
+
+	// Stable random seed — fixed at mount, survives re-renders from useLiveQuery.
+	// Component is keyed by runId, so a new run gets a fresh shuffle.
+	const [seed] = useState(Math.random);
+
+	// Per-trial reveal — shows model name briefly then auto-hides.
+	const [revealedTrialId, setRevealedTrialId] = useState<string | null>(null);
+	const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	useEffect(() => {
+		return () => {
+			if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+		};
+	}, []);
 
 	const data = useLiveQuery(async () => {
 		const trials = await db.trials.where('runId').equals(run.id).toArray();
@@ -117,7 +147,10 @@ export default function RateMode({ run }: Props) {
 		);
 	}
 
-	const { sorted: trials, modelMap, ratingMap } = data;
+	// Apply stable shuffle — deterministic for this seed so result is consistent
+	// across re-renders from useLiveQuery (ratings save triggers re-run).
+	const trials: Trial[] = seededShuffle([...data.sorted], seed);
+	const { modelMap, ratingMap } = data;
 
 	if (trials.length === 0) {
 		return (
@@ -134,6 +167,16 @@ export default function RateMode({ run }: Props) {
 	const total = trials.length;
 	const ratedCount = ratingMap.size;
 	const allRated = ratedCount === total;
+	const isRevealed = revealedTrialId === trial.id;
+
+	function handleReveal() {
+		console.log('[RateMode] Revealing model for trial:', trial.id);
+		if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+		setRevealedTrialId(trial.id);
+		revealTimerRef.current = setTimeout(() => {
+			setRevealedTrialId(null);
+		}, 2500);
+	}
 
 	function handleRate(score: number) {
 		console.log('[RateMode] Rate trial', trial.id, 'score:', score);
@@ -174,11 +217,21 @@ export default function RateMode({ run }: Props) {
 			<div className="px-5 py-4 border-b border-border shrink-0">
 				<div className="flex items-center justify-between gap-4">
 					<div className="flex items-center gap-2 min-w-0">
-						{model && (
+						{/* Model name — hidden until revealed */}
+						{isRevealed && model ? (
 							<ModelBadge
 								name={model.name}
 								provider={model.provider}
 							/>
+						) : (
+							<button
+								type="button"
+								onClick={handleReveal}
+								className="flex items-center gap-1 px-1.5 py-0.5 rounded border border-border/60 text-[10px] text-muted-foreground hover:text-foreground hover:border-border transition-colors duration-150 shrink-0"
+							>
+								<Eye size={10} />
+								Reveal
+							</button>
 						)}
 						<span className="text-sm text-foreground truncate">
 							{trial.input}

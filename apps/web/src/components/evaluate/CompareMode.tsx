@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate } from '@tanstack/react-router';
-import { ArrowDown, ArrowUp, ChevronRight } from 'lucide-react';
+import { ArrowDown, ArrowUp, ChevronRight, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { db } from '@/db';
 import MusicRenderer from '@/components/music/MusicRenderer';
@@ -32,20 +32,43 @@ function ModelBadge({ name, provider }: { name: string; provider: Provider }) {
 	);
 }
 
+// ─── Fisher-Yates shuffle ─────────────────────────────────────────────────────
+// Called once at mount via useState(() => ...) so the column order is fixed
+// for the lifetime of this run's evaluation session.
+
+function fisherYates<T>(arr: T[]): T[] {
+	const result = [...arr];
+	for (let i = result.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[result[i], result[j]] = [result[j], result[i]];
+	}
+	return result;
+}
+
 // ─── Model column ─────────────────────────────────────────────────────────────
 
 function ModelColumn({
 	model,
 	trial,
+	label,
+	revealed,
 }: {
 	model: Model;
 	trial: Trial | undefined;
+	label: string;
+	revealed: boolean;
 }) {
 	const [rawExpanded, setRawExpanded] = useState(false);
 
 	return (
 		<div className="w-72 min-w-[272px] flex flex-col gap-3">
-			<ModelBadge name={model.name} provider={model.provider} />
+			{revealed ? (
+				<ModelBadge name={model.name} provider={model.provider} />
+			) : (
+				<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-muted text-muted-foreground">
+					{label}
+				</span>
+			)}
 
 			{trial?.output ? (
 				<MusicRenderer output={trial.output} />
@@ -85,12 +108,12 @@ function ModelColumn({
 
 interface RankingWidgetProps {
 	initialOrder: string[];
-	modelMap: Map<string, Model>;
+	getLabel: (modelId: string) => string;
 	onSave: (order: string[]) => void;
 }
 
 // Keyed by input — remounts (and resets state) when the input changes.
-function RankingWidget({ initialOrder, modelMap, onSave }: RankingWidgetProps) {
+function RankingWidget({ initialOrder, getLabel, onSave }: RankingWidgetProps) {
 	const [order, setOrder] = useState(initialOrder);
 
 	function move(idx: number, dir: -1 | 1) {
@@ -105,42 +128,39 @@ function RankingWidget({ initialOrder, modelMap, onSave }: RankingWidgetProps) {
 
 	return (
 		<div className="space-y-1">
-			{order.map((modelId, i) => {
-				const model = modelMap.get(modelId);
-				return (
-					<div
-						key={modelId}
-						className="flex items-center gap-2 py-1 px-2 rounded-md bg-muted/50"
-					>
-						<span className="text-xs text-muted-foreground w-5 shrink-0 text-right">
-							#{i + 1}
-						</span>
-						<span className="flex-1 min-w-0 text-sm font-mono text-foreground truncate">
-							{model?.name ?? modelId}
-						</span>
-						<div className="flex gap-0.5">
-							<button
-								type="button"
-								onClick={() => move(i, -1)}
-								disabled={i === 0}
-								aria-label="Move up"
-								className="p-1 rounded hover:bg-muted disabled:opacity-20 disabled:cursor-default transition-colors duration-100"
-							>
-								<ArrowUp size={12} />
-							</button>
-							<button
-								type="button"
-								onClick={() => move(i, 1)}
-								disabled={i === order.length - 1}
-								aria-label="Move down"
-								className="p-1 rounded hover:bg-muted disabled:opacity-20 disabled:cursor-default transition-colors duration-100"
-							>
-								<ArrowDown size={12} />
-							</button>
-						</div>
+			{order.map((modelId, i) => (
+				<div
+					key={modelId}
+					className="flex items-center gap-2 py-1 px-2 rounded-md bg-muted/50"
+				>
+					<span className="text-xs text-muted-foreground w-5 shrink-0 text-right">
+						#{i + 1}
+					</span>
+					<span className="flex-1 min-w-0 text-sm font-mono text-foreground truncate">
+						{getLabel(modelId)}
+					</span>
+					<div className="flex gap-0.5">
+						<button
+							type="button"
+							onClick={() => move(i, -1)}
+							disabled={i === 0}
+							aria-label="Move up"
+							className="p-1 rounded hover:bg-muted disabled:opacity-20 disabled:cursor-default transition-colors duration-100"
+						>
+							<ArrowUp size={12} />
+						</button>
+						<button
+							type="button"
+							onClick={() => move(i, 1)}
+							disabled={i === order.length - 1}
+							aria-label="Move down"
+							className="p-1 rounded hover:bg-muted disabled:opacity-20 disabled:cursor-default transition-colors duration-100"
+						>
+							<ArrowDown size={12} />
+						</button>
 					</div>
-				);
-			})}
+				</div>
+			))}
 		</div>
 	);
 }
@@ -155,6 +175,20 @@ interface Props {
 export default function CompareMode({ run, plan }: Props) {
 	const navigate = useNavigate();
 	const [inputIdx, setInputIdx] = useState(0);
+
+	// Shuffle model column order once at mount. Component is keyed by runId so
+	// a new run gets a fresh shuffle. Consistent order across all inputs.
+	const [shuffledModelIds] = useState(() => fisherYates([...run.modelIds]));
+
+	// Global reveal — shows real model names briefly then auto-hides.
+	const [modelsRevealed, setModelsRevealed] = useState(false);
+	const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	useEffect(() => {
+		return () => {
+			if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+		};
+	}, []);
 
 	const data = useLiveQuery(async () => {
 		const trials = await db.trials.where('runId').equals(run.id).toArray();
@@ -186,13 +220,20 @@ export default function CompareMode({ run, plan }: Props) {
 
 	const inputTrials = trials.filter((t) => t.inputIndex === inputIdx);
 
-	// Initial ranking order: from DB if exists, otherwise run.modelIds order
+	// Initial ranking order: from DB if exists, otherwise shuffled order
 	const existingRanking = rankingMap.get(inputIdx);
 	const initialOrder = existingRanking
 		? [...existingRanking.modelRanks]
 				.sort((a, b) => a.rank - b.rank)
 				.map((r) => r.modelId)
-		: run.modelIds;
+		: shuffledModelIds;
+
+	// Label function — "Model A", "Model B", … when hidden; real name when revealed
+	function getLabel(modelId: string): string {
+		if (modelsRevealed) return modelMap.get(modelId)?.name ?? modelId;
+		const i = shuffledModelIds.indexOf(modelId);
+		return i >= 0 ? `Model ${String.fromCharCode(65 + i)}` : modelId;
+	}
 
 	function saveRanking(order: string[]) {
 		console.log(
@@ -238,9 +279,30 @@ export default function CompareMode({ run, plan }: Props) {
 				<p className="text-sm font-medium text-foreground truncate">
 					{plan.name}
 				</p>
-				<span className="text-xs text-muted-foreground shrink-0">
-					{rankedCount} / {totalInputs} inputs ranked
-				</span>
+				<div className="flex items-center gap-3 shrink-0">
+					{/* Temporary reveal */}
+					<button
+						type="button"
+						onClick={() => {
+							console.log(
+								'[CompareMode] Models revealed temporarily'
+							);
+							if (revealTimerRef.current)
+								clearTimeout(revealTimerRef.current);
+							setModelsRevealed(true);
+							revealTimerRef.current = setTimeout(() => {
+								setModelsRevealed(false);
+							}, 2500);
+						}}
+						className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors duration-150"
+					>
+						<Eye size={13} />
+						Reveal models
+					</button>
+					<span className="text-xs text-muted-foreground">
+						{rankedCount} / {totalInputs} inputs ranked
+					</span>
+				</div>
 			</div>
 
 			<div className="flex flex-1 overflow-hidden">
@@ -288,10 +350,10 @@ export default function CompareMode({ run, plan }: Props) {
 							</span>
 						</p>
 
-						{/* Model columns — horizontal scroll if > 3 models */}
+						{/* Model columns — shuffled order, horizontal scroll if > 3 */}
 						<div className="overflow-x-auto">
 							<div className="flex gap-5 min-w-max pb-1">
-								{run.modelIds.map((modelId) => {
+								{shuffledModelIds.map((modelId, i) => {
 									const model = modelMap.get(modelId);
 									const trial = inputTrials.find(
 										(t) => t.modelId === modelId
@@ -302,6 +364,8 @@ export default function CompareMode({ run, plan }: Props) {
 											key={modelId}
 											model={model}
 											trial={trial}
+											label={`Model ${String.fromCharCode(65 + i)}`}
+											revealed={modelsRevealed}
 										/>
 									);
 								})}
@@ -316,7 +380,7 @@ export default function CompareMode({ run, plan }: Props) {
 							<RankingWidget
 								key={`${run.id}-${inputIdx}`}
 								initialOrder={initialOrder}
-								modelMap={modelMap}
+								getLabel={getLabel}
 								onSave={saveRanking}
 							/>
 						</div>
