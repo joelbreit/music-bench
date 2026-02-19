@@ -8,6 +8,7 @@ import type {
 	Verdict,
 	Rating,
 	Ranking,
+	TrialNote,
 } from '@/types';
 
 class MusicBenchDB extends Dexie {
@@ -19,6 +20,7 @@ class MusicBenchDB extends Dexie {
 	verdicts!: Table<Verdict>;
 	ratings!: Table<Rating>;
 	rankings!: Table<Ranking>;
+	trialNotes!: Table<TrialNote>;
 
 	constructor() {
 		super('music-bench');
@@ -31,6 +33,9 @@ class MusicBenchDB extends Dexie {
 			verdicts: 'trialId',
 			ratings: 'trialId',
 			rankings: '[runId+inputIndex]',
+		});
+		this.version(2).stores({
+			trialNotes: 'trialId',
 		});
 	}
 }

@@ -87,6 +87,11 @@ export interface Rating {
 	score: 1 | 2 | 3 | 4 | 5;
 }
 
+export interface TrialNote {
+	trialId: string;
+	notes: string;
+}
+
 export interface Ranking {
 	runId: string;
 	inputIndex: number;

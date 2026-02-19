@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate } from '@tanstack/react-router';
 import {
@@ -96,6 +96,45 @@ function seededShuffle<T>(arr: T[], seed: number): T[] {
 	return result;
 }
 
+// ─── Trial notes ─────────────────────────────────────────────────────────────
+
+function TrialNotes({
+	initialNotes,
+	onSave,
+}: {
+	initialNotes: string;
+	onSave: (notes: string) => void;
+}) {
+	const [notes, setNotes] = useState(initialNotes);
+	const [isDirty, setIsDirty] = useState(false);
+	const onSaveRef = useRef(onSave);
+	useLayoutEffect(() => {
+		onSaveRef.current = onSave;
+	});
+
+	useEffect(() => {
+		if (!isDirty) return;
+		const timer = setTimeout(() => {
+			console.log('[TrialNotes] Auto-saving notes');
+			onSaveRef.current(notes);
+			setIsDirty(false);
+		}, 1000);
+		return () => clearTimeout(timer);
+	}, [isDirty, notes]);
+
+	return (
+		<textarea
+			value={notes}
+			onChange={(e) => {
+				setNotes(e.target.value);
+				setIsDirty(true);
+			}}
+			placeholder="Add notes…"
+			className="w-full min-h-[80px] px-3 py-2 rounded-md border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground resize-y focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+		/>
+	);
+}
+
 // ─── Rate Mode ────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -144,7 +183,15 @@ export default function RateMode({ run }: Props) {
 			.toArray();
 		const ratingMap = new Map(ratings.map((r) => [r.trialId, r.score]));
 
-		return { sorted, modelMap, ratingMap };
+		const trialNoteRows = await db.trialNotes
+			.where('trialId')
+			.anyOf(sorted.map((t) => t.id))
+			.toArray();
+		const notesMap = new Map(
+			trialNoteRows.map((n) => [n.trialId, n.notes])
+		);
+
+		return { sorted, modelMap, ratingMap, notesMap };
 	}, [run.id]);
 
 	if (!data) {
@@ -158,7 +205,7 @@ export default function RateMode({ run }: Props) {
 	// Apply stable shuffle — deterministic for this seed so result is consistent
 	// across re-renders from useLiveQuery (ratings save triggers re-run).
 	const trials: Trial[] = seededShuffle([...data.sorted], seed);
-	const { modelMap, ratingMap } = data;
+	const { modelMap, ratingMap, notesMap } = data;
 
 	if (trials.length === 0) {
 		return (
@@ -183,6 +230,16 @@ export default function RateMode({ run }: Props) {
 		});
 	}
 	const currentRating = ratingMap.get(trial.id) ?? null;
+	const currentNotes = notesMap.get(trial.id) ?? '';
+
+	function handleSaveNotes(notes: string) {
+		console.log('[RateMode] Saving notes for trial:', trial.id);
+		db.trialNotes
+			.put({ trialId: trial.id, notes })
+			.catch((err: unknown) =>
+				console.error('[RateMode] Notes save failed:', err)
+			);
+	}
 	const total = trials.length;
 	const ratedCount = ratingMap.size;
 	const allRated = ratedCount === total;
@@ -320,6 +377,18 @@ export default function RateMode({ run }: Props) {
 						Rating
 					</p>
 					<StarRating value={currentRating} onChange={handleRate} />
+				</div>
+
+				{/* Notes */}
+				<div>
+					<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+						Notes
+					</p>
+					<TrialNotes
+						key={trial.id}
+						initialNotes={currentNotes}
+						onSave={handleSaveNotes}
+					/>
 				</div>
 			</div>
 
