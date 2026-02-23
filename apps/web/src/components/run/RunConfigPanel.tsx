@@ -134,109 +134,112 @@ export default function RunConfigPanel() {
 	}
 
 	return (
-		<div className="flex flex-col h-full p-5 gap-6 overflow-y-auto">
-			{/* ── Plan selector ── */}
-			<div className="space-y-2">
-				<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-					Plan
-				</p>
-				<select
-					value={selectedPlanId}
-					onChange={(e) => {
-						console.log(
-							'[RunConfigPanel] Plan selected:',
-							e.target.value
-						);
-						setSelectedPlanId(e.target.value);
-					}}
-					className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
-				>
-					<option value="">Select a plan…</option>
-					{[...plansByFolder.entries()].map(
-						([folderId, folderPlans]) => (
-							<optgroup
-								key={folderId}
-								label={
-									folderMap.get(folderId)?.name ??
-									'Unknown folder'
-								}
-							>
-								{folderPlans.map((plan) => (
-									<option key={plan.id} value={plan.id}>
-										{plan.name}
-									</option>
-								))}
-							</optgroup>
-						)
-					)}
-				</select>
-
-				{selectedPlan && (
-					<p className="text-[11px] text-muted-foreground">
-						{selectedPlan.inputs.length} input
-						{selectedPlan.inputs.length !== 1 ? 's' : ''}
-						{' · '}
-						<span className="capitalize">
-							{selectedPlan.evalStrategy}
-						</span>{' '}
-						eval
-					</p>
-				)}
-
-				{hasPlan && !planHasInputs && (
-					<p className="text-[11px] text-warning">
-						This plan has no inputs. Add at least one input in the
-						Build surface.
-					</p>
-				)}
-			</div>
-
-			{/* ── Model multi-select ── */}
-			<div className="space-y-2">
-				<div className="flex items-center justify-between">
+		<div className="flex flex-col h-full overflow-hidden">
+			{/* ── Scrollable content ── */}
+			<div className="flex-1 overflow-y-auto p-5 space-y-6">
+				{/* ── Plan selector ── */}
+				<div className="space-y-2">
 					<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-						Models
+						Plan
 					</p>
-					{models.length > 0 && (
-						<button
-							type="button"
-							onClick={toggleAll}
-							className="text-[11px] text-muted-foreground hover:text-foreground transition-colors duration-150"
-						>
-							{allSelected ? 'Deselect all' : 'Select all'}
-						</button>
+					<select
+						value={selectedPlanId}
+						onChange={(e) => {
+							console.log(
+								'[RunConfigPanel] Plan selected:',
+								e.target.value
+							);
+							setSelectedPlanId(e.target.value);
+						}}
+						className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+					>
+						<option value="">Select a plan…</option>
+						{[...plansByFolder.entries()].map(
+							([folderId, folderPlans]) => (
+								<optgroup
+									key={folderId}
+									label={
+										folderMap.get(folderId)?.name ??
+										'Unknown folder'
+									}
+								>
+									{folderPlans.map((plan) => (
+										<option key={plan.id} value={plan.id}>
+											{plan.name}
+										</option>
+									))}
+								</optgroup>
+							)
+						)}
+					</select>
+
+					{selectedPlan && (
+						<p className="text-[11px] text-muted-foreground">
+							{selectedPlan.inputs.length} input
+							{selectedPlan.inputs.length !== 1 ? 's' : ''}
+							{' · '}
+							<span className="capitalize">
+								{selectedPlan.evalStrategy}
+							</span>{' '}
+							eval
+						</p>
+					)}
+
+					{hasPlan && !planHasInputs && (
+						<p className="text-[11px] text-warning">
+							This plan has no inputs. Add at least one input in
+							the Build surface.
+						</p>
 					)}
 				</div>
 
-				{models.length === 0 ? (
-					<p className="text-sm text-dim-foreground py-1">
-						No models enabled — configure models in Settings.
-					</p>
-				) : (
-					<div className="space-y-0.5">
-						{models.map((model) => (
-							<label
-								key={model.id}
-								className="flex items-center gap-2.5 py-1.5 px-2 rounded-md cursor-pointer hover:bg-muted"
+				{/* ── Model multi-select ── */}
+				<div className="space-y-2">
+					<div className="flex items-center justify-between">
+						<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+							Models
+						</p>
+						{models.length > 0 && (
+							<button
+								type="button"
+								onClick={toggleAll}
+								className="text-[11px] text-muted-foreground hover:text-foreground transition-colors duration-150"
 							>
-								<input
-									type="checkbox"
-									checked={selectedModelIds.has(model.id)}
-									onChange={() => toggleModel(model.id)}
-									className="shrink-0 accent-primary"
-								/>
-								<span className="flex-1 min-w-0 text-sm font-mono text-foreground truncate">
-									{model.name}
-								</span>
-								<ProviderBadge provider={model.provider} />
-							</label>
-						))}
+								{allSelected ? 'Deselect all' : 'Select all'}
+							</button>
+						)}
 					</div>
-				)}
+
+					{models.length === 0 ? (
+						<p className="text-sm text-dim-foreground py-1">
+							No models enabled — configure models in Settings.
+						</p>
+					) : (
+						<div className="space-y-0.5">
+							{models.map((model) => (
+								<label
+									key={model.id}
+									className="flex items-center gap-2.5 py-1.5 px-2 rounded-md cursor-pointer hover:bg-muted"
+								>
+									<input
+										type="checkbox"
+										checked={selectedModelIds.has(model.id)}
+										onChange={() => toggleModel(model.id)}
+										className="shrink-0 accent-primary"
+									/>
+									<span className="flex-1 min-w-0 text-sm font-mono text-foreground truncate">
+										{model.name}
+									</span>
+									<ProviderBadge provider={model.provider} />
+								</label>
+							))}
+						</div>
+					)}
+				</div>
 			</div>
 
-			{/* ── Launch ── */}
-			<div className="space-y-3 mt-auto">
+			{/* ── Sticky launch footer ── */}
+			<div className="shrink-0 px-5 py-4 border-t border-border space-y-3">
 				<button
 					type="button"
 					onClick={() => void handleLaunch()}

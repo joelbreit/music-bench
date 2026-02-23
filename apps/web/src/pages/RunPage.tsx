@@ -1,17 +1,32 @@
 import RunConfigPanel from '@/components/run/RunConfigPanel';
 import RunHistoryPanel from '@/components/run/RunHistoryPanel';
+import {
+	ResizablePanelGroup,
+	ResizablePanel,
+	ResizableHandle,
+} from '@/components/ui/resizable';
 
 export default function RunPage() {
 	return (
-		<div className="flex flex-1 overflow-hidden">
+		<ResizablePanelGroup
+			direction="horizontal"
+			autoSaveId="run-panels-v2"
+			className="flex-1"
+		>
 			{/* Left: run configuration */}
-			<div className="w-80 shrink-0 border-r border-border overflow-hidden flex flex-col">
+			<ResizablePanel
+				defaultSize="28%"
+				minSize="20%"
+				maxSize="50%"
+				className="border-r border-border flex flex-col overflow-hidden"
+			>
 				<RunConfigPanel />
-			</div>
+			</ResizablePanel>
+			<ResizableHandle withHandle />
 			{/* Right: run history */}
-			<div className="flex-1 overflow-hidden">
+			<ResizablePanel defaultSize="72%" className="overflow-hidden">
 				<RunHistoryPanel />
-			</div>
-		</div>
+			</ResizablePanel>
+		</ResizablePanelGroup>
 	);
 }

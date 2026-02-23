@@ -1,15 +1,35 @@
 import { Outlet } from '@tanstack/react-router';
 import RunSelectorPanel from '@/components/explore/RunSelectorPanel';
+import {
+	ResizablePanelGroup,
+	ResizablePanel,
+	ResizableHandle,
+} from '@/components/ui/resizable';
 
 export default function ExplorePage() {
 	return (
-		<div className="flex flex-1 overflow-hidden">
+		<ResizablePanelGroup
+			direction="horizontal"
+			autoSaveId="explore-panels-v2"
+			className="flex-1"
+		>
 			{/* Run selector — T19 */}
-			<aside className="w-72 shrink-0 border-r border-border overflow-hidden flex flex-col">
+			<ResizablePanel
+				defaultSize="24%"
+				minSize="15%"
+				maxSize="40%"
+				className="border-r border-border overflow-hidden flex flex-col"
+			>
 				<RunSelectorPanel />
-			</aside>
+			</ResizablePanel>
+			<ResizableHandle withHandle />
 			{/* Run report — T20, T21, T22 */}
-			<Outlet />
-		</div>
+			<ResizablePanel
+				defaultSize="76%"
+				className="overflow-hidden flex flex-col"
+			>
+				<Outlet />
+			</ResizablePanel>
+		</ResizablePanelGroup>
 	);
 }

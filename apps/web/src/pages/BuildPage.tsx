@@ -1,14 +1,31 @@
 import { Outlet } from '@tanstack/react-router';
 import FolderSidebar from '@/components/build/FolderSidebar';
+import {
+	ResizablePanelGroup,
+	ResizablePanel,
+	ResizableHandle,
+} from '@/components/ui/resizable';
 
 export default function BuildPage() {
 	return (
-		<div className="flex flex-1 overflow-hidden">
-			<aside className="w-56 shrink-0 border-r border-border">
+		<ResizablePanelGroup
+			direction="horizontal"
+			autoSaveId="build-panels-v2"
+			className="flex-1"
+		>
+			<ResizablePanel
+				defaultSize="22%"
+				minSize="15%"
+				maxSize="40%"
+				className="border-r border-border"
+			>
 				<FolderSidebar />
-			</aside>
+			</ResizablePanel>
+			<ResizableHandle withHandle />
 			{/* Plan editor — T7, T8 */}
-			<Outlet />
-		</div>
+			<ResizablePanel defaultSize="78%">
+				<Outlet />
+			</ResizablePanel>
+		</ResizablePanelGroup>
 	);
 }
