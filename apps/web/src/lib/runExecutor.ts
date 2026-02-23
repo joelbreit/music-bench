@@ -141,6 +141,7 @@ export async function executeRun(
 			trial.input
 		);
 
+		const trialStart = Date.now();
 		try {
 			const prompt = plan.promptTemplate.replace(
 				/\{\{input\}\}/g,
@@ -148,18 +149,19 @@ export async function executeRun(
 			);
 			const adapter = getAdapter(model);
 			const result = await adapter.call(model, prompt, trial.input);
+			const trialLatencyMs = Date.now() - trialStart;
 
 			await db.trials.update(trial.id, {
 				output: result.output,
-				latencyMs: result.latencyMs,
+				latencyMs: trialLatencyMs,
 				tokens: result.tokens,
 				status: 'complete',
 			});
 			console.log(
 				'[runExecutor] Trial complete',
 				trial.id,
-				'latency:',
-				result.latencyMs + 'ms',
+				'wall-clock:',
+				trialLatencyMs + 'ms',
 				'tokens:',
 				result.tokens
 			);
