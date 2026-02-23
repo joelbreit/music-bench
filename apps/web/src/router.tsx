@@ -23,9 +23,9 @@ import UnderstandPage from '@/pages/UnderstandPage';
 
 const rootRoute = createRootRoute({
 	component: () => (
-		<div className="flex min-h-svh flex-col">
+		<div className="flex h-svh flex-col overflow-hidden">
 			<NavBar />
-			<main className="flex flex-1 overflow-hidden">
+			<main className="flex min-h-0 flex-1 overflow-hidden">
 				<Outlet />
 			</main>
 		</div>
