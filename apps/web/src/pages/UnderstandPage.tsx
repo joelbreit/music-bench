@@ -4,6 +4,11 @@ import GlobalLeaderboard from '@/components/understand/GlobalLeaderboard';
 import ScoreMatrix from '@/components/understand/ScoreMatrix';
 import { computeAggregateReport } from '@/lib/computeAggregateReport';
 import { useUIStore } from '@/store';
+import {
+	ResizablePanelGroup,
+	ResizablePanel,
+	ResizableHandle,
+} from '@/components/ui/resizable';
 
 export default function UnderstandPage() {
 	const understandPlanIds = useUIStore((s) => s.understandPlanIds);
@@ -19,14 +24,27 @@ export default function UnderstandPage() {
 	const selectedCount = understandPlanIds.length;
 
 	return (
-		<div className="flex flex-1 overflow-hidden">
+		<ResizablePanelGroup
+			direction="horizontal"
+			autoSaveId="understand-panels-v1"
+			className="flex-1"
+		>
 			{/* Assessment filter — T28 */}
-			<aside className="w-60 shrink-0 border-r border-border overflow-hidden flex flex-col">
+			<ResizablePanel
+				defaultSize="22%"
+				minSize="15%"
+				maxSize="40%"
+				className="border-r border-border overflow-hidden flex flex-col"
+			>
 				<AssessmentFilterPanel />
-			</aside>
+			</ResizablePanel>
+			<ResizableHandle withHandle />
 
 			{/* Aggregate results — right panel */}
-			<div className="flex-1 overflow-hidden flex flex-col">
+			<ResizablePanel
+				defaultSize="78%"
+				className="overflow-hidden flex flex-col"
+			>
 				{selectedCount === 0 ? (
 					<div className="flex flex-1 items-center justify-center text-muted-foreground text-sm">
 						Select assessments to view aggregate results
@@ -48,7 +66,7 @@ export default function UnderstandPage() {
 						</div>
 					</>
 				)}
-			</div>
-		</div>
+			</ResizablePanel>
+		</ResizablePanelGroup>
 	);
 }
