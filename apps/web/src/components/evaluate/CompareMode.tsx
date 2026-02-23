@@ -67,7 +67,10 @@ function ModelColumn({
 }) {
 	const [rawExpanded, setRawExpanded] = useState(false);
 	const [copiedAbc, setCopiedAbc] = useState(false);
-	const abcMatch = /```abc\n([\s\S]*?)```/.exec(trial?.output ?? '');
+	const rawOutput = trial?.output ?? '';
+	const abcMatch =
+		/```abc\n([\s\S]*?)```/.exec(rawOutput) ??
+		/```\n([\s\S]*?)```/.exec(rawOutput);
 	const abcContent = abcMatch ? abcMatch[1] : null;
 
 	function handleCopyAbc() {
