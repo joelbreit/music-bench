@@ -1,20 +1,23 @@
 // Run Execution Engine
 //
 // Drives a single Run from 'queued' to 'complete' (or 'cancelled'/'failed').
-// Trials run sequentially, one at a time, in model × input order.
+// Trials run in parallel: CONCURRENCY workers pull from a shared queue,
+// each executing one trial at a time.
 //
 // Resume support: if trials already exist for the run (e.g. after a
 // cancellation), completed trials are skipped and execution picks up from
 // where it left off. Any trials stuck in 'running' are reset to 'pending'
 // before resuming.
 //
-// isCancelled() is polled before each trial; returning true stops execution
-// and marks the run as 'cancelled'.
+// isCancelled() is polled before each trial is picked up. In-flight trials
+// always run to completion; cancellation only prevents new ones from starting.
 
 import { db } from '@/db';
 import { getAdapter } from '@/lib/adapters';
 import { runParseAssertion } from '@/lib/parseVerdict';
 import type { Trial } from '@/types';
+
+const CONCURRENCY = 5;
 
 export async function executeRun(
 	runId: string,
@@ -117,19 +120,13 @@ export async function executeRun(
 
 	onProgress(completed, total);
 
-	for (const trial of trialsToExecute) {
-		if (isCancelled()) {
-			console.log(
-				'[runExecutor] Cancellation requested — stopping run',
-				runId
-			);
-			await db.runs.update(runId, {
-				status: 'cancelled',
-				completedAt: new Date(),
-			});
-			return;
-		}
+	// ── Parallel execution ─────────────────────────────────────────────────────
+	// Workers pull from the queue until it's empty or cancellation is requested.
+	// JS's single-threaded event loop makes queue.shift() safe across workers.
 
+	const queue = [...trialsToExecute];
+
+	async function executeOneTrial(trial: Trial): Promise<void> {
 		const model = modelMap.get(trial.modelId)!;
 		await db.trials.update(trial.id, { status: 'running' });
 		console.log(
@@ -186,14 +183,40 @@ export async function executeRun(
 			console.error('[runExecutor] Trial failed', trial.id, err);
 			await db.trials.update(trial.id, { status: 'failed' });
 		}
-
-		completed++;
-		onProgress(completed, total);
 	}
 
-	await db.runs.update(runId, {
-		status: 'complete',
-		completedAt: new Date(),
-	});
-	console.log('[runExecutor] Run complete', runId);
+	async function runWorker(): Promise<void> {
+		while (queue.length > 0) {
+			if (isCancelled()) return;
+			const trial = queue.shift();
+			if (!trial) return;
+			await executeOneTrial(trial);
+			completed++;
+			onProgress(completed, total);
+		}
+	}
+
+	const workerCount = Math.min(CONCURRENCY, trialsToExecute.length);
+	console.log(
+		'[runExecutor] Running',
+		trialsToExecute.length,
+		'trials with concurrency',
+		workerCount
+	);
+	await Promise.all(Array.from({ length: workerCount }, runWorker));
+
+	// ── Final status ───────────────────────────────────────────────────────────
+	if (isCancelled()) {
+		console.log('[runExecutor] Run cancelled', runId);
+		await db.runs.update(runId, {
+			status: 'cancelled',
+			completedAt: new Date(),
+		});
+	} else {
+		console.log('[runExecutor] Run complete', runId);
+		await db.runs.update(runId, {
+			status: 'complete',
+			completedAt: new Date(),
+		});
+	}
 }
