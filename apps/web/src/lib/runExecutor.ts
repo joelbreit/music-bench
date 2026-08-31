@@ -32,8 +32,8 @@ export async function executeRun(
 		return;
 	}
 
-	const plan = await db.plans.get(run.planId);
-	if (!plan) {
+	const maybePlan = await db.plans.get(run.planId);
+	if (!maybePlan) {
 		console.error('[runExecutor] Plan not found:', run.planId);
 		await db.runs.update(runId, {
 			status: 'failed',
@@ -41,6 +41,8 @@ export async function executeRun(
 		});
 		return;
 	}
+	// Capture in a const so closures below can see the narrowed non-undefined type.
+	const plan = maybePlan;
 
 	// Preserve the model order from run.modelIds
 	const allModels = await db.models.where('id').anyOf(run.modelIds).toArray();

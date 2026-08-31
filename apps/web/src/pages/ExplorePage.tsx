@@ -8,11 +8,7 @@ import {
 
 export default function ExplorePage() {
 	return (
-		<ResizablePanelGroup
-			direction="horizontal"
-			autoSaveId="explore-panels-v2"
-			className="flex-1"
-		>
+		<ResizablePanelGroup className="flex-1">
 			{/* Run selector — T19 */}
 			<ResizablePanel
 				defaultSize="24%"

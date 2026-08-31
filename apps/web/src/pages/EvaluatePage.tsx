@@ -8,11 +8,7 @@ import {
 
 export default function EvaluatePage() {
 	return (
-		<ResizablePanelGroup
-			direction="horizontal"
-			autoSaveId="evaluate-panels-v2"
-			className="flex-1"
-		>
+		<ResizablePanelGroup className="flex-1">
 			{/* Evaluation queue — T16 */}
 			<ResizablePanel
 				defaultSize="24%"

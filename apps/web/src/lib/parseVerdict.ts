@@ -13,6 +13,7 @@ import {
 	analyzeAbc,
 	analyzeLength,
 	analyzeRhythm,
+	analyzeMeasureAlignment,
 } from '@/lib/abcAnalysis';
 
 // Functions injected into the parse assertion sandbox so users can write
@@ -36,6 +37,7 @@ export function runParseAssertion(
 			'analyzeAbc',
 			'analyzeLength',
 			'analyzeRhythm',
+			'analyzeMeasureAlignment',
 			`${parseCode}\nreturn typeof assert === 'function' ? assert(output) : false;`
 		);
 		const result = fn(
@@ -43,7 +45,8 @@ export function runParseAssertion(
 			extractAbc,
 			analyzeAbc,
 			analyzeLength,
-			analyzeRhythm
+			analyzeRhythm,
+			analyzeMeasureAlignment
 		);
 		return { trialId, type: 'verdict', pass: Boolean(result), error: null };
 	} catch (e) {

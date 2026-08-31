@@ -59,9 +59,28 @@ export interface RhythmAnalysis {
 	legend: { id: string; humanized: string }[];
 }
 
+export interface MeasureMismatch {
+	/** 0-based measure index. */
+	measure: number;
+	/** Per-voice durations for this measure (staff:voice → duration). */
+	voiceDurations: { staff: number; voice: number; duration: number }[];
+}
+
+export interface MeasureAlignmentAnalysis {
+	/** True when every measure has equal total duration across all voices. */
+	aligned: boolean;
+	/** Total number of measures (max across voices). */
+	measureCount: number;
+	/** Number of voices compared. */
+	voiceCount: number;
+	/** Measures where at least two voices disagree on duration. Empty when aligned. */
+	mismatches: MeasureMismatch[];
+}
+
 export interface AbcAnalysis {
 	length: LengthAnalysis;
 	rhythm: RhythmAnalysis;
+	measureAlignment: MeasureAlignmentAnalysis;
 }
 
 // ─── ABC extraction ──────────────────────────────────────────────────────────
@@ -276,6 +295,102 @@ export function analyzeRhythm(abc: string): RhythmAnalysis {
 	};
 }
 
+// ─── Measure alignment analysis ──────────────────────────────────────────────
+
+/** Sum durations of all note/rest elements in a measure. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function measureDuration(elements: any[]): number {
+	let total = 0;
+	for (const el of elements) {
+		if (el.duration) total += el.duration;
+	}
+	return total;
+}
+
+/**
+ * Collect all elements for each unique voice across all lines of the tune,
+ * then split into measures by barline. Returns one entry per voice with
+ * per-measure durations.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getPerVoiceMeasureDurations(tune: any): {
+	staff: number;
+	voice: number;
+	durations: number[];
+}[] {
+	// Accumulate raw element arrays per voice key across all lines.
+	const voiceElements = new Map<
+		string,
+		{ s: number; v: number; els: unknown[] }
+	>();
+
+	for (const line of tune.lines) {
+		if (!line.staff) continue;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		line.staff.forEach((staff: any, s: number) => {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			staff.voices?.forEach((voice: any[], v: number) => {
+				const key = `${s}:${v}`;
+				let entry = voiceElements.get(key);
+				if (!entry) {
+					entry = { s, v, els: [] };
+					voiceElements.set(key, entry);
+				}
+				entry.els.push(...voice);
+			});
+		});
+	}
+
+	return [...voiceElements.values()].map(({ s, v, els }) => {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const measures = splitIntoMeasures(els as any[]);
+		return {
+			staff: s,
+			voice: v,
+			durations: measures.map(measureDuration),
+		};
+	});
+}
+
+export function analyzeMeasureAlignment(abc: string): MeasureAlignmentAnalysis {
+	const tune = abcjs.parseOnly(abc)[0];
+	const voiceData = getPerVoiceMeasureDurations(tune);
+
+	if (voiceData.length <= 1) {
+		return {
+			aligned: true,
+			measureCount: voiceData[0]?.durations.length ?? 0,
+			voiceCount: voiceData.length,
+			mismatches: [],
+		};
+	}
+
+	const measureCount = Math.max(...voiceData.map((v) => v.durations.length));
+	const mismatches: MeasureMismatch[] = [];
+
+	for (let m = 0; m < measureCount; m++) {
+		const voiceDurations = voiceData.map((v) => ({
+			staff: v.staff,
+			voice: v.voice,
+			duration: v.durations[m] ?? 0,
+		}));
+		const first = voiceDurations[0].duration;
+		const allMatch = voiceDurations.every(
+			(vd) => Math.abs(vd.duration - first) < 1e-9
+		);
+		if (!allMatch) {
+			mismatches.push({ measure: m, voiceDurations });
+		}
+	}
+
+	return {
+		aligned: mismatches.length === 0,
+		measureCount,
+		voiceCount: voiceData.length,
+		mismatches,
+	};
+}
+
 // ─── Combined analysis ───────────────────────────────────────────────────────
 
 /**
@@ -286,5 +401,6 @@ export function analyzeAbc(abc: string): AbcAnalysis {
 	return {
 		length: analyzeLength(abc),
 		rhythm: analyzeRhythm(abc),
+		measureAlignment: analyzeMeasureAlignment(abc),
 	};
 }

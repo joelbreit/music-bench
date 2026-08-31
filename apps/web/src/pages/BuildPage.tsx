@@ -8,11 +8,7 @@ import {
 
 export default function BuildPage() {
 	return (
-		<ResizablePanelGroup
-			direction="horizontal"
-			autoSaveId="build-panels-v2"
-			className="flex-1"
-		>
+		<ResizablePanelGroup className="flex-1">
 			<ResizablePanel
 				defaultSize="22%"
 				minSize="15%"

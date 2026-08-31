@@ -34,7 +34,7 @@ export default function AbcAnalysisPanel({ output }: Props) {
 
 	if (!analysis) return null;
 
-	const { length, rhythm } = analysis;
+	const { length, rhythm, measureAlignment } = analysis;
 
 	return (
 		<div>
@@ -96,6 +96,45 @@ export default function AbcAnalysisPanel({ output }: Props) {
 							</p>
 						)}
 					</div>
+
+					{/* ── Measure Alignment ── */}
+					{measureAlignment.voiceCount > 1 && (
+						<div>
+							<p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1">
+								Measure Alignment
+							</p>
+							<p>
+								{measureAlignment.measureCount} measures across{' '}
+								{measureAlignment.voiceCount} voices
+							</p>
+							<p
+								className={
+									measureAlignment.aligned
+										? 'text-success'
+										: 'text-destructive'
+								}
+							>
+								{measureAlignment.aligned
+									? '✓ All measures aligned'
+									: `✗ ${measureAlignment.mismatches.length} measure${measureAlignment.mismatches.length === 1 ? '' : 's'} misaligned`}
+							</p>
+							{measureAlignment.mismatches.length > 0 && (
+								<div className="mt-1 space-y-0.5 text-destructive/80">
+									{measureAlignment.mismatches.map((mm) => (
+										<p key={mm.measure}>
+											Bar {mm.measure + 1}:{' '}
+											{mm.voiceDurations
+												.map(
+													(vd) =>
+														`S${vd.staff}V${vd.voice}=${fmtDuration(vd.duration)}`
+												)
+												.join(', ')}
+										</p>
+									))}
+								</div>
+							)}
+						</div>
+					)}
 
 					{/* ── Rhythm ── */}
 					<div>

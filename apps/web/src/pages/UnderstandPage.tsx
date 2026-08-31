@@ -24,11 +24,7 @@ export default function UnderstandPage() {
 	const selectedCount = understandPlanIds.length;
 
 	return (
-		<ResizablePanelGroup
-			direction="horizontal"
-			autoSaveId="understand-panels-v1"
-			className="flex-1"
-		>
+		<ResizablePanelGroup className="flex-1">
 			{/* Assessment filter — T28 */}
 			<ResizablePanel
 				defaultSize="22%"

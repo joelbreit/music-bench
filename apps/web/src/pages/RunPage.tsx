@@ -8,11 +8,7 @@ import {
 
 export default function RunPage() {
 	return (
-		<ResizablePanelGroup
-			direction="horizontal"
-			autoSaveId="run-panels-v2"
-			className="flex-1"
-		>
+		<ResizablePanelGroup className="flex-1">
 			{/* Left: run configuration */}
 			<ResizablePanel
 				defaultSize="28%"
