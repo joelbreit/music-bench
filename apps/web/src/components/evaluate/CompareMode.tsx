@@ -10,8 +10,10 @@ import {
 	Eye,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { extractAbc } from '@/lib/abcAnalysis';
 import { db } from '@/db';
 import MusicRenderer from '@/components/music/MusicRenderer';
+import AbcAnalysisPanel from '@/components/evaluate/AbcAnalysisPanel';
 import type { Model, Plan, Provider, Run, Trial } from '@/types';
 
 // ─── Model badge ──────────────────────────────────────────────────────────────
@@ -68,10 +70,7 @@ function ModelColumn({
 	const [rawExpanded, setRawExpanded] = useState(false);
 	const [copiedAbc, setCopiedAbc] = useState(false);
 	const rawOutput = trial?.output ?? '';
-	const abcMatch =
-		/```abc\n([\s\S]*?)```/.exec(rawOutput) ??
-		/```\n([\s\S]*?)```/.exec(rawOutput);
-	const abcContent = abcMatch ? abcMatch[1] : null;
+	const abcContent = extractAbc(rawOutput);
 
 	function handleCopyAbc() {
 		if (!abcContent) return;
@@ -139,6 +138,9 @@ function ModelColumn({
 					</pre>
 				)}
 			</div>
+
+			{/* ABC analysis */}
+			<AbcAnalysisPanel output={rawOutput} />
 		</div>
 	);
 }

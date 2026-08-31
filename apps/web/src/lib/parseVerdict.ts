@@ -8,6 +8,21 @@
 // tool where the user writes their own assertion code.
 
 import type { Verdict } from '@/types';
+import {
+	extractAbc,
+	analyzeAbc,
+	analyzeLength,
+	analyzeRhythm,
+} from '@/lib/abcAnalysis';
+
+// Functions injected into the parse assertion sandbox so users can write
+// checks like:
+//   function assert(output) {
+//     const abc = extractAbc(output);
+//     if (!abc) return false;
+//     const { length } = analyzeAbc(abc);
+//     return length.voicesMatch && length.voices[0].bars >= 8;
+//   }
 
 export function runParseAssertion(
 	trialId: string,
@@ -17,9 +32,19 @@ export function runParseAssertion(
 	try {
 		const fn = new Function(
 			'output',
+			'extractAbc',
+			'analyzeAbc',
+			'analyzeLength',
+			'analyzeRhythm',
 			`${parseCode}\nreturn typeof assert === 'function' ? assert(output) : false;`
 		);
-		const result = fn(output);
+		const result = fn(
+			output,
+			extractAbc,
+			analyzeAbc,
+			analyzeLength,
+			analyzeRhythm
+		);
 		return { trialId, type: 'verdict', pass: Boolean(result), error: null };
 	} catch (e) {
 		return {

@@ -19,6 +19,9 @@ importers:
             '@tanstack/react-router':
                 specifier: ^1.160.2
                 version: 1.160.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+            abcjs:
+                specifier: ^6.6.2
+                version: 6.6.2
             class-variance-authority:
                 specifier: ^0.7.1
                 version: 0.7.1
@@ -2426,6 +2429,12 @@ packages:
         engines: { node: ^20.19.0 || >=22.12.0 }
         peerDependencies:
             vite: ^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0
+
+    abcjs@6.6.2:
+        resolution:
+            {
+                integrity: sha512-YLbp5lYUq0uOywWZx9EuTdm0TcflKZi7hOzz366A/LFl3qoAXSYIjznJQmr/VeHg8NcLxZYoN8dLi7PqCpxKEA==,
+            }
 
     accepts@2.0.0:
         resolution:
@@ -6995,6 +7004,8 @@ snapshots:
             vite: 7.3.1(@types/node@24.10.13)(jiti@2.6.1)(lightningcss@1.30.2)
         transitivePeerDependencies:
             - supports-color
+
+    abcjs@6.6.2: {}
 
     accepts@2.0.0:
         dependencies:
